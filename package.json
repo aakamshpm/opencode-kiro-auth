@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "@aws/codewhisperer-streaming-client": "^1.0.34",
-    "@opencode-ai/plugin": "^1.2.6",
+    "@opencode-ai/plugin": "^1.14.39",
     "proper-lockfile": "^4.1.2",
     "zod": "^3.24.0"
   },

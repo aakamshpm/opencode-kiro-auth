@@ -29,6 +29,11 @@ export const createKiroPlugin =
     const requestHandler = new RequestHandler(accountManager, config, repository, client)
 
     return {
+      config: async (input: any) => {
+        if (!input.provider) input.provider = {}
+        if (!input.provider[id]) input.provider[id] = {}
+        input.provider[id].npm = '@ai-sdk/openai-compatible'
+      },
       auth: {
         provider: id,
         loader: async (getAuth: any) => {
@@ -45,6 +50,26 @@ export const createKiroPlugin =
           }
         },
         methods: authHandler.getMethods()
+      },
+      provider: {
+        id,
+        models: async (provider: any) => {
+          const models = provider?.models || {}
+          const normalized: Record<string, any> = {}
+
+          for (const [modelID, model] of Object.entries(models)) {
+            const modelInfo = model as any
+            normalized[modelID] = {
+              ...modelInfo,
+              api: {
+                ...(modelInfo.api || {}),
+                npm: '@ai-sdk/openai-compatible'
+              }
+            }
+          }
+
+          return normalized
+        }
       }
     }
   }
