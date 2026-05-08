@@ -1,6 +1,12 @@
+import { Buffer } from 'node:buffer'
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+
+const binaryToBase64Replacer = (_key: string, value: unknown): unknown => {
+  if (value instanceof Uint8Array) return Buffer.from(value).toString('base64')
+  return value
+}
 
 const getLogDir = () => {
   const platform = process.platform
@@ -48,7 +54,7 @@ const writeApiLog = (
     const prefix = isError ? 'error_' : ''
     const filename = `${prefix}${timestamp}_${type}.json`
     const path = join(dir, filename)
-    const content = JSON.stringify(data, null, 2)
+    const content = JSON.stringify(data, binaryToBase64Replacer, 2)
     writeFileSync(path, content)
   } catch (e) {}
 }

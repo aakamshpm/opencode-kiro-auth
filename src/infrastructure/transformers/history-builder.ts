@@ -103,7 +103,11 @@ export function buildHistory(msgs: any[], resolved: string): CodeWhispererMessag
 
         const unifiedImages = extractAllImages(m.content)
         if (unifiedImages.length > 0) {
-          uim.images = convertImagesToKiroFormat(unifiedImages)
+          const { images, omitted } = convertImagesToKiroFormat(unifiedImages)
+          uim.images = images
+          if (omitted > 0) {
+            uim.content += `\n\n[${omitted} image(s) omitted due to API limits]`
+          }
         }
       } else {
         uim.content = getContentText(m)

@@ -167,7 +167,11 @@ function buildCodeWhispererRequest(
 
       const unifiedImages = extractAllImages(curMsg.content)
       if (unifiedImages.length > 0) {
-        curImgs.push(...convertImagesToKiroFormat(unifiedImages))
+        const { images, omitted } = convertImagesToKiroFormat(unifiedImages)
+        curImgs.push(...images)
+        if (omitted > 0) {
+          curContent += `\n\n[${omitted} image(s) omitted due to API limits]`
+        }
       }
     } else curContent = getContentText(curMsg)
     if (!curContent)
