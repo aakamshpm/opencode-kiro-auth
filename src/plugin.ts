@@ -1,70 +1,15 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
 import { KIRO_CONSTANTS } from './constants.js'
 import { AuthHandler } from './core/auth/auth-handler.js'
 import { RequestHandler } from './core/request/request-handler.js'
 import { AccountCache } from './infrastructure/database/account-cache.js'
 import { AccountRepository } from './infrastructure/database/account-repository.js'
 import { AccountManager } from './plugin/accounts.js'
+import { bootstrapAuthIfNeeded } from './plugin/auth-bootstrap.js'
 import { loadConfig } from './plugin/config/index.js'
-import * as logger from './plugin/logger.js'
-import { getCliDbPath } from './plugin/sync/kiro-cli-parser.js'
 
 type ToastFunction = (message: string, variant: string) => void
 
 const KIRO_PROVIDER_ID = 'kiro'
-
-/**
- * OpenCode only calls the auth loader when there is a stored auth entry for the
- * provider in auth.json. The plugin syncs credentials from the Kiro IDE's local
- * SQLite database, so it doesn't need the user to go through an OAuth flow first.
- *
- * This function writes a minimal placeholder entry into auth.json so that
- * OpenCode will call the loader on the next startup, at which point the real
- * credentials are synced from the Kiro CLI DB.
- */
-function bootstrapAuthIfNeeded(providerId: string): void {
-  try {
-    const cliDbPath = getCliDbPath()
-    if (!existsSync(cliDbPath)) {
-      logger.log('Bootstrap: Kiro CLI DB not found, skipping')
-      return
-    }
-
-    const authPath = join(
-      process.platform === 'win32'
-        ? process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local')
-        : join(homedir(), '.local', 'share'),
-      'opencode',
-      'auth.json'
-    )
-
-    let auth: Record<string, any> = {}
-    if (existsSync(authPath)) {
-      try {
-        auth = JSON.parse(readFileSync(authPath, 'utf-8'))
-      } catch {}
-    }
-
-    if (auth[providerId]) {
-      // Already has an entry — loader will be called normally
-      return
-    }
-
-    logger.log(`Bootstrap: writing placeholder auth entry for provider "${providerId}"`)
-    auth[providerId] = {
-      type: 'api',
-      key: 'kiro-bootstrap-placeholder'
-    }
-
-    mkdirSync(join(authPath, '..'), { recursive: true })
-    writeFileSync(authPath, JSON.stringify(auth, null, 2), 'utf-8')
-    logger.log('Bootstrap: auth.json updated — loader will run on next request')
-  } catch (e) {
-    logger.warn(`Bootstrap failed: ${e instanceof Error ? e.message : String(e)}`)
-  }
-}
 
 export const createKiroPlugin =
   (id: string) =>

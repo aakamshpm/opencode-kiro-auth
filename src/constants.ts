@@ -1,7 +1,7 @@
 import { RegionSchema } from './plugin/config/schema'
 import type { KiroRegion } from './plugin/types'
 
-const VALID_REGIONS: readonly KiroRegion[] = Object.values(RegionSchema.Values)
+const VALID_REGIONS: readonly KiroRegion[] = RegionSchema.options
 
 export function isValidRegion(region: string): region is KiroRegion {
   return VALID_REGIONS.includes(region as KiroRegion)
