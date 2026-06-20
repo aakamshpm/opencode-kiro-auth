@@ -144,7 +144,7 @@ export class KiroDatabase {
     await withDatabaseLock(this.path, async () => {
       const now = Date.now()
 
-      this.db.run('BEGIN TRANSACTION')
+      this.db.exec('BEGIN TRANSACTION')
       try {
         const stmt = this.db.prepare(
           `
@@ -163,9 +163,9 @@ export class KiroDatabase {
           stmt.run(reason, now, id)
         }
 
-        this.db.run('COMMIT')
+        this.db.exec('COMMIT')
       } catch (e) {
-        this.db.run('ROLLBACK')
+        this.db.exec('ROLLBACK')
         throw e
       }
     })
