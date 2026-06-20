@@ -13,6 +13,11 @@ import {
   safeJsonParse
 } from './kiro-cli-parser'
 import { readActiveProfileArnFromKiroCli } from './kiro-cli-profile'
+import {
+  getStaleKiroCliAccountIds,
+  STALE_CLI_ACCOUNT_REASON,
+  type SyncedCliAccount
+} from './stale-accounts'
 
 export async function syncFromKiroCli() {
   const dbPath = getCliDbPath()
@@ -38,6 +43,7 @@ export async function syncFromKiroCli() {
     )
     const deviceReg = safeJsonParse(deviceRegRow?.value)
     const regCreds = deviceReg ? findClientCredsRecursive(deviceReg) : {}
+    const syncedAccounts: SyncedCliAccount[] = []
 
     for (const row of rows) {
       if (row.key.includes(':token')) {
@@ -196,8 +202,23 @@ export async function syncFromKiroCli() {
           limitCount,
           lastSync: Date.now()
         })
+
+        syncedAccounts.push({
+          id,
+          email: resolvedEmail,
+          authMethod,
+          clientId,
+          profileArn
+        })
       }
     }
+
+    const staleIds = getStaleKiroCliAccountIds(kiroDb.getAccounts(), syncedAccounts)
+    if (staleIds.length > 0) {
+      await kiroDb.markAccountsUnhealthy(staleIds, STALE_CLI_ACCOUNT_REASON)
+      logger.warn('Kiro CLI sync: deactivated stale cached accounts', { count: staleIds.length })
+    }
+
     cliDb.close()
   } catch (e) {
     logger.error('Sync failed', e)

@@ -137,6 +137,39 @@ export class KiroDatabase {
     })
   }
 
+  async markAccountsUnhealthy(ids: string[], reason: string): Promise<void> {
+    if (ids.length === 0) return
+
+    await withDatabaseLock(this.path, async () => {
+      const now = Date.now()
+
+      this.db.run('BEGIN TRANSACTION')
+      try {
+        const stmt = this.db.prepare(
+          `
+            UPDATE accounts
+            SET is_healthy = 0,
+                unhealthy_reason = ?,
+                recovery_time = NULL,
+                fail_count = 10,
+                rate_limit_reset = 0,
+                last_sync = ?
+            WHERE id = ?
+          `
+        )
+
+        for (const id of ids) {
+          stmt.run(reason, now, id)
+        }
+
+        this.db.run('COMMIT')
+      } catch (e) {
+        this.db.run('ROLLBACK')
+        throw e
+      }
+    })
+  }
+
   private rowToAccount(row: any): ManagedAccount {
     return {
       id: row.id,

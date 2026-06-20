@@ -63,8 +63,10 @@ export function mergeAccounts(
     const existingAcc = accountMap.get(acc.id)
 
     if (existingAcc) {
+      const incomingHasPermanentError = isPermanentError(acc.unhealthyReason)
       const hasPermanentError =
-        isPermanentError(existingAcc.unhealthyReason) || isPermanentError(acc.unhealthyReason)
+        isPermanentError(existingAcc.unhealthyReason) || incomingHasPermanentError
+      const incomingRecovered = acc.isHealthy && !incomingHasPermanentError
 
       accountMap.set(acc.id, {
         ...existingAcc,
@@ -76,8 +78,18 @@ export function mergeAccounts(
           existingAcc.rateLimitResetTime || 0,
           acc.rateLimitResetTime || 0
         ),
-        isHealthy: hasPermanentError ? false : existingAcc.isHealthy || acc.isHealthy,
-        failCount: Math.max(existingAcc.failCount || 0, acc.failCount || 0),
+        isHealthy: incomingRecovered
+          ? true
+          : hasPermanentError
+            ? false
+            : existingAcc.isHealthy || acc.isHealthy,
+        unhealthyReason: incomingRecovered
+          ? undefined
+          : acc.unhealthyReason || existingAcc.unhealthyReason,
+        recoveryTime: incomingRecovered ? undefined : acc.recoveryTime || existingAcc.recoveryTime,
+        failCount: incomingRecovered
+          ? acc.failCount || 0
+          : Math.max(existingAcc.failCount || 0, acc.failCount || 0),
         lastSync: Math.max(existingAcc.lastSync || 0, acc.lastSync || 0)
       })
     } else {
