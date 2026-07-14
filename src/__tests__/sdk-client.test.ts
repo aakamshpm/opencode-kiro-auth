@@ -30,7 +30,7 @@ describe('SDK client', () => {
   test('injects effort before content-length is computed', async () => {
     clearSdkClientCache()
 
-    const client = createSdkClient(auth(), 'us-east-1', 'max')
+    const client = createSdkClient(auth(), 'us-east-1', 'max', 'claude-opus-4.7')
     let capturedRequest: any
 
     client.middlewareStack.add(
@@ -66,6 +66,51 @@ describe('SDK client', () => {
     const body = JSON.parse(bodyText)
 
     expect(body.additionalModelRequestFields.output_config.effort).toBe('max')
+    expect(Number(capturedRequest.headers['content-length'])).toBe(Buffer.byteLength(bodyText))
+
+    clearSdkClientCache()
+  })
+
+  test('uses reasoning effort fields for GPT models', async () => {
+    clearSdkClientCache()
+
+    const client = createSdkClient(auth(), 'us-east-1', 'xhigh', 'gpt-5.6-sol')
+    let capturedRequest: any
+
+    client.middlewareStack.add(
+      () => async (args: any) => {
+        capturedRequest = args.request
+        throw new Error('captured-request')
+      },
+      { step: 'finalizeRequest', name: 'captureGptRequest', priority: 'high' }
+    )
+
+    const command = new GenerateAssistantResponseCommand({
+      conversationState: {
+        chatTriggerType: 'MANUAL',
+        conversationId: 'test-conversation',
+        currentMessage: {
+          userInputMessage: {
+            content: 'hello',
+            modelId: 'gpt-5.6-sol',
+            origin: 'AI_EDITOR'
+          }
+        }
+      }
+    })
+
+    await client.send(command).catch((error) => {
+      if (error.message !== 'captured-request') throw error
+    })
+
+    const bodyText =
+      typeof capturedRequest.body === 'string'
+        ? capturedRequest.body
+        : Buffer.from(capturedRequest.body).toString('utf8')
+    const body = JSON.parse(bodyText)
+
+    expect(body.additionalModelRequestFields.reasoning.effort).toBe('xhigh')
+    expect(body.additionalModelRequestFields.output_config).toBeUndefined()
     expect(Number(capturedRequest.headers['content-length'])).toBe(Buffer.byteLength(bodyText))
 
     clearSdkClientCache()

@@ -7,9 +7,14 @@ export const EFFORT_LEVELS: readonly Effort[] = ['low', 'medium', 'high', 'xhigh
 
 /**
  * Models that support the 5-value effort enum (including xhigh).
- * These models support up to 128k thinking tokens with max effort.
  */
-const XHIGH_CAPABLE_MODELS = new Set(['claude-opus-4.7', 'claude-opus-4.8'])
+const XHIGH_CAPABLE_MODELS = new Set([
+  'claude-opus-4.7',
+  'claude-opus-4.8',
+  'gpt-5.6-sol',
+  'gpt-5.6-terra',
+  'gpt-5.6-luna'
+])
 
 /**
  * Models that support the 4-value effort enum (no xhigh).
@@ -51,7 +56,7 @@ export function resolveEffort(kiroModel: string, requested: Effort): Effort | un
     return undefined
   }
 
-  // xhigh is only supported on opus-4.7 and opus-4.8
+  // Clamp xhigh for models whose API schema does not support it.
   if (requested === 'xhigh' && !supportsXHighEffort(kiroModel)) {
     return 'max'
   }
@@ -72,7 +77,7 @@ export function resolveEffort(kiroModel: string, requested: Effort): Effort | un
  * - ≤10000  → low
  * - ≤20000  → medium
  * - ≤28000  → high
- * - ≤32768  → max (or xhigh on opus-4.7/4.8, max otherwise)
+ * - ≤32768  → max
  * - >32768  → max
  */
 export function budgetToEffort(budget: number, kiroModel: string): Effort | undefined {

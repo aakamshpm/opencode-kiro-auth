@@ -14,6 +14,9 @@ describe('effort module', () => {
       expect(supportsEffort('claude-opus-4.7')).toBe(true)
       expect(supportsEffort('claude-sonnet-4.6')).toBe(true)
       expect(supportsEffort('claude-sonnet-4.6-1m')).toBe(true)
+      expect(supportsEffort('gpt-5.6-sol')).toBe(true)
+      expect(supportsEffort('gpt-5.6-terra')).toBe(true)
+      expect(supportsEffort('gpt-5.6-luna')).toBe(true)
     })
 
     test('returns false for unsupported models', () => {
@@ -23,9 +26,12 @@ describe('effort module', () => {
   })
 
   describe('supportsXHighEffort', () => {
-    test('returns true for opus 4.7 and 4.8', () => {
+    test('returns true for models with xhigh support', () => {
       expect(supportsXHighEffort('claude-opus-4.8')).toBe(true)
       expect(supportsXHighEffort('claude-opus-4.7')).toBe(true)
+      expect(supportsXHighEffort('gpt-5.6-sol')).toBe(true)
+      expect(supportsXHighEffort('gpt-5.6-terra')).toBe(true)
+      expect(supportsXHighEffort('gpt-5.6-luna')).toBe(true)
     })
 
     test('returns false for other models', () => {

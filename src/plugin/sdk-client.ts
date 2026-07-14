@@ -10,6 +10,7 @@ interface ClientCacheEntry {
   client: CodeWhispererStreamingClient
   token: string
   effort?: Effort
+  model?: string
 }
 
 const clientCache = new Map<string, ClientCacheEntry>()
@@ -18,12 +19,18 @@ const KIRO_CLI_MAX_ATTEMPTS = 3
 export function createSdkClient(
   auth: KiroAuthDetails,
   region: string,
-  effort?: Effort
+  effort?: Effort,
+  model?: string
 ): CodeWhispererStreamingClient {
-  const cacheKey = `${region}:${auth.email || 'default'}:${effort || 'none'}`
+  const cacheKey = `${region}:${auth.email || 'default'}:${model || 'default'}:${effort || 'none'}`
   const cached = clientCache.get(cacheKey)
 
-  if (cached && cached.token === auth.access && cached.effort === effort) {
+  if (
+    cached &&
+    cached.token === auth.access &&
+    cached.effort === effort &&
+    cached.model === model
+  ) {
     return cached.client
   }
 
@@ -46,7 +53,7 @@ export function createSdkClient(
     { step: 'build', name: 'addKiroHeaders' }
   )
 
-  // Inject additionalModelRequestFields for effort-based thinking control
+  // Kiro exposes provider-native effort schemas through additionalModelRequestFields.
   if (effort) {
     client.middlewareStack.add(
       (next: any) => async (args: any) => {
@@ -55,11 +62,9 @@ export function createSdkClient(
         if (args.request?.body) {
           try {
             const body = JSON.parse(args.request.body)
-            body.additionalModelRequestFields = {
-              output_config: {
-                effort
-              }
-            }
+            body.additionalModelRequestFields = model?.startsWith('gpt-')
+              ? { reasoning: { effort } }
+              : { output_config: { effort } }
             args.request.body = JSON.stringify(body)
           } catch {
             // If body parsing fails, continue without modification
@@ -71,7 +76,7 @@ export function createSdkClient(
     )
   }
 
-  clientCache.set(cacheKey, { client, token, effort })
+  clientCache.set(cacheKey, { client, token, effort, model })
   return client
 }
 
