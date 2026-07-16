@@ -35,7 +35,8 @@ export class TokenRefresher {
       const newAuth = await refreshAccessToken(auth)
       this.accountManager.updateFromAuth(account, newAuth)
       await this.repository.batchSave(this.accountManager.getAccounts())
-      return { account, shouldContinue: false }
+      // Rebuild auth on the next request-loop iteration so the refreshed token is used.
+      return { account, shouldContinue: true }
     } catch (e: any) {
       return await this.handleRefreshError(e, account, showToast)
     }
