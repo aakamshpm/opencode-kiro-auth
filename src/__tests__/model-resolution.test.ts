@@ -18,6 +18,17 @@ describe('resolveKiroModel', () => {
     expect(resolveKiroModel('claude-opus-4-8-thinking')).toBe('claude-opus-4.8')
     expect(resolveKiroModel('claude-opus-5')).toBe('claude-opus-5')
     expect(resolveKiroModel('claude-opus-5-thinking')).toBe('claude-opus-5')
+    expect(resolveKiroModel('gpt-5.6-sol')).toBe('gpt-5.6-sol')
+    expect(resolveKiroModel('gpt-5.6-sol-thinking')).toBe('gpt-5.6-sol')
+    expect(resolveKiroModel('gpt-5.6-terra')).toBe('gpt-5.6-terra')
+    expect(resolveKiroModel('gpt-5.6-luna')).toBe('gpt-5.6-luna')
+  })
+
+  test('resolves claude-sonnet-5 slugs', () => {
+    expect(resolveKiroModel('claude-sonnet-5')).toBe('claude-sonnet-5')
+    expect(resolveKiroModel('claude-sonnet-5-thinking')).toBe('claude-sonnet-5')
+    expect(resolveKiroModel('claude-sonnet-5-1m')).toBe('claude-sonnet-5-1m')
+    expect(resolveKiroModel('claude-sonnet-5-1m-thinking')).toBe('claude-sonnet-5-1m')
   })
 
   test('rejects removed qwen3-coder-480b slug', () => {

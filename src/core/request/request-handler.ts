@@ -88,6 +88,7 @@ export class RequestHandler {
       20000
 
     let retry = 0
+    let bearerRetried = false
     let consecutiveNullAccounts = 0
     const retryContext = this.retryStrategy.createContext()
 
@@ -157,16 +158,30 @@ export class RequestHandler {
           sdkResponse,
           model,
           sdkPrep.conversationId,
-          sdkPrep.streaming
+          sdkPrep.streaming,
+          sdkPrep.toolNameMap
         )
       } catch (e: any) {
         const httpStatus = e?.$metadata?.httpStatusCode
 
-        if (httpStatus) {
-          if (apiTimestamp) {
-            this.logSdkError(sdkPrep, e, acc, apiTimestamp)
-          }
+        if (httpStatus && apiTimestamp) {
+          this.logSdkError(sdkPrep, e, acc, apiTimestamp)
+        }
 
+        if (httpStatus === 403 && !bearerRetried) {
+          const msg = e?.message || ''
+          if (
+            msg.includes('bearer token included in the request is invalid') ||
+            msg.includes('The bearer token included in the request is invalid')
+          ) {
+            bearerRetried = true
+            logger.warn('403 bearer invalid on first attempt, forcing token refresh and retrying')
+            await this.tokenRefresher.forceRefresh(acc, this.accountManager.toAuthDetails(acc))
+            continue
+          }
+        }
+
+        if (httpStatus) {
           const mockResponse = new Response(
             JSON.stringify({ message: e.message, __type: e.name }),
             {
@@ -180,13 +195,17 @@ export class RequestHandler {
             e,
             mockResponse,
             acc,
-            { retry },
+            { retry, bearerRetried },
             showToast
           )
 
           if (errorResult.shouldRetry) {
             if (errorResult.newContext) {
               retry = errorResult.newContext.retry
+              bearerRetried = errorResult.newContext.bearerRetried ?? bearerRetried
+            }
+            if (errorResult.forceRefresh) {
+              await this.tokenRefresher.forceRefresh(acc, this.accountManager.toAuthDetails(acc))
             }
             if (errorResult.switchAccount) {
               continue
@@ -194,6 +213,22 @@ export class RequestHandler {
             continue
           }
 
+          const errMsg = e?.message || `Kiro Error: ${httpStatus}`
+          if (/input is too long/i.test(errMsg)) {
+            return new Response(
+              JSON.stringify({
+                error: {
+                  message: 'input is too long for requested model',
+                  type: 'invalid_request_error',
+                  code: 'context_length_exceeded'
+                }
+              }),
+              {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+              }
+            )
+          }
           throw new Error(`Kiro Error: ${httpStatus}`)
         }
 

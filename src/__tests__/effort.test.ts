@@ -15,6 +15,8 @@ describe('effort module', () => {
       expect(supportsEffort('claude-opus-5')).toBe(true)
       expect(supportsEffort('claude-sonnet-4.6')).toBe(true)
       expect(supportsEffort('claude-sonnet-4.6-1m')).toBe(true)
+      expect(supportsEffort('claude-sonnet-5')).toBe(true)
+      expect(supportsEffort('claude-sonnet-5-1m')).toBe(true)
       expect(supportsEffort('gpt-5.6-sol')).toBe(true)
       expect(supportsEffort('gpt-5.6-terra')).toBe(true)
       expect(supportsEffort('gpt-5.6-luna')).toBe(true)

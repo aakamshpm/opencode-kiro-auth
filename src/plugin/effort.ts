@@ -30,6 +30,7 @@ const EFFORT_CAPABLE_MODELS = new Set([
   'claude-sonnet-4.6',
   'claude-sonnet-4.6-1m',
   'claude-sonnet-5',
+  'claude-sonnet-5-1m',
   ...XHIGH_CAPABLE_MODELS
 ])
 

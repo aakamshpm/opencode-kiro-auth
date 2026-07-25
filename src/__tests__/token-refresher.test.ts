@@ -35,7 +35,7 @@ describe('TokenRefresher', () => {
       region: 'us-east-1',
       oidcRegion: 'us-east-1'
     }
-    let persistedAccounts: ManagedAccount[] | undefined
+    let persistedAccount: ManagedAccount | undefined
 
     globalThis.fetch = (async () =>
       new Response(
@@ -56,8 +56,8 @@ describe('TokenRefresher', () => {
       getAccounts: () => [account]
     } as unknown as AccountManager
     const repository = {
-      batchSave: async (accounts: ManagedAccount[]) => {
-        persistedAccounts = accounts
+      save: async (savedAccount: ManagedAccount) => {
+        persistedAccount = savedAccount
       }
     } as unknown as AccountRepository
     const refresher = new TokenRefresher(
@@ -76,6 +76,6 @@ describe('TokenRefresher', () => {
     expect(result.shouldContinue).toBe(true)
     expect(account.accessToken).toBe('fresh-access')
     expect(account.refreshToken).toBe('fresh-refresh')
-    expect(persistedAccounts).toEqual([account])
+    expect(persistedAccount).toBe(account)
   })
 })

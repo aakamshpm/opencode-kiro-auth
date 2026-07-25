@@ -34,11 +34,39 @@ export class TokenRefresher {
     try {
       const newAuth = await refreshAccessToken(auth)
       this.accountManager.updateFromAuth(account, newAuth)
-      await this.repository.batchSave(this.accountManager.getAccounts())
+      await this.repository.save(account)
       // Rebuild auth on the next request-loop iteration so the refreshed token is used.
       return { account, shouldContinue: true }
     } catch (e: any) {
       return await this.handleRefreshError(e, account, showToast)
+    }
+  }
+
+  async forceRefresh(account: ManagedAccount, auth: KiroAuthDetails): Promise<void> {
+    if (this.config.auto_sync_kiro_cli) {
+      await this.syncFromKiroCli()
+    }
+
+    this.repository.invalidateCache()
+    const accounts = await this.repository.findAll()
+    const synced = accounts.find((a: ManagedAccount) => a.id === account.id)
+
+    if (synced && synced.accessToken !== account.accessToken) {
+      this.accountManager.updateFromAuth(account, this.accountManager.toAuthDetails(synced))
+      await this.repository.batchSave(this.accountManager.getAccounts())
+      logger.debug('Force refresh: recovered newer token from CLI sync')
+      return
+    }
+
+    try {
+      const newAuth = await refreshAccessToken(auth)
+      this.accountManager.updateFromAuth(account, newAuth)
+      await this.repository.batchSave(this.accountManager.getAccounts())
+      logger.debug('Force refresh: token refreshed via OIDC')
+    } catch (e: any) {
+      logger.warn('Force refresh failed, will retry with current token', {
+        message: e instanceof Error ? e.message : String(e)
+      })
     }
   }
 
@@ -82,7 +110,7 @@ export class TokenRefresher {
         error.message.includes('Invalid grant provided') ||
         error.message.includes('Client is expired'))
     ) {
-      this.accountManager.markUnhealthy(account, error.message)
+      this.accountManager.markUnhealthy(account, error.code || error.message)
       await this.repository.batchSave(this.accountManager.getAccounts())
       return { account, shouldContinue: true }
     }
