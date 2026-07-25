@@ -11,6 +11,7 @@ export const EFFORT_LEVELS: readonly Effort[] = ['low', 'medium', 'high', 'xhigh
 const XHIGH_CAPABLE_MODELS = new Set([
   'claude-opus-4.7',
   'claude-opus-4.8',
+  'claude-opus-5',
   'gpt-5.6-sol',
   'gpt-5.6-terra',
   'gpt-5.6-luna'

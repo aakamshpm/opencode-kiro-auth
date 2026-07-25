@@ -16,6 +16,8 @@ describe('resolveKiroModel', () => {
     expect(resolveKiroModel('claude-sonnet-4')).toBe('claude-sonnet-4')
     expect(resolveKiroModel('claude-opus-4-8')).toBe('claude-opus-4.8')
     expect(resolveKiroModel('claude-opus-4-8-thinking')).toBe('claude-opus-4.8')
+    expect(resolveKiroModel('claude-opus-5')).toBe('claude-opus-5')
+    expect(resolveKiroModel('claude-opus-5-thinking')).toBe('claude-opus-5')
   })
 
   test('rejects removed qwen3-coder-480b slug', () => {

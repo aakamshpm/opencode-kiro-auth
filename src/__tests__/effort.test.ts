@@ -12,6 +12,7 @@ describe('effort module', () => {
     test('returns true for supported models', () => {
       expect(supportsEffort('claude-opus-4.8')).toBe(true)
       expect(supportsEffort('claude-opus-4.7')).toBe(true)
+      expect(supportsEffort('claude-opus-5')).toBe(true)
       expect(supportsEffort('claude-sonnet-4.6')).toBe(true)
       expect(supportsEffort('claude-sonnet-4.6-1m')).toBe(true)
       expect(supportsEffort('gpt-5.6-sol')).toBe(true)
@@ -29,6 +30,7 @@ describe('effort module', () => {
     test('returns true for models with xhigh support', () => {
       expect(supportsXHighEffort('claude-opus-4.8')).toBe(true)
       expect(supportsXHighEffort('claude-opus-4.7')).toBe(true)
+      expect(supportsXHighEffort('claude-opus-5')).toBe(true)
       expect(supportsXHighEffort('gpt-5.6-sol')).toBe(true)
       expect(supportsXHighEffort('gpt-5.6-terra')).toBe(true)
       expect(supportsXHighEffort('gpt-5.6-luna')).toBe(true)
