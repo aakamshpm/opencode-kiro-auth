@@ -5,7 +5,7 @@ import type { KiroConfig } from '../../plugin/config'
 import { isPermanentError } from '../../plugin/health'
 import * as logger from '../../plugin/logger'
 import { transformToSdkRequest } from '../../plugin/request'
-import { createSdkClient } from '../../plugin/sdk-client'
+import { buildAdditionalModelRequestFields, createSdkClient } from '../../plugin/sdk-client'
 import { syncFromKiroCli } from '../../plugin/sync/kiro-cli'
 import type { KiroAuthDetails, ManagedAccount, SdkPreparedRequest } from '../../plugin/types'
 import { AccountSelector } from '../account/account-selector'
@@ -277,6 +277,11 @@ export class RequestHandler {
   }
 
   private logSdkRequest(prep: SdkPreparedRequest, acc: ManagedAccount, timestamp: string): void {
+    // Mirrors what the sdk-client middleware injects, so logs reflect the wire body.
+    const additionalModelRequestFields = prep.effort
+      ? buildAdditionalModelRequestFields(prep.effort, prep.effectiveModel)
+      : undefined
+
     logger.logApiRequest(
       {
         url: `https://q.${prep.region}.amazonaws.com/generateAssistantResponse`,
@@ -289,7 +294,8 @@ export class RequestHandler {
             historyLength: (prep.conversationState as any).history?.length || 0,
             currentMessage: prep.conversationState.currentMessage
           },
-          profileArn: prep.profileArn
+          profileArn: prep.profileArn,
+          ...(additionalModelRequestFields ? { additionalModelRequestFields } : {})
         },
         conversationId: prep.conversationId,
         model: prep.effectiveModel,

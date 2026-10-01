@@ -1,11 +1,24 @@
 # OpenCode Kiro Auth Plugin
 
-[![npm version](https://img.shields.io/npm/v/@zhafron/opencode-kiro-auth)](https://www.npmjs.com/package/@zhafron/opencode-kiro-auth)
-[![npm downloads](https://img.shields.io/npm/dm/@zhafron/opencode-kiro-auth)](https://www.npmjs.com/package/@zhafron/opencode-kiro-auth)
-[![license](https://img.shields.io/npm/l/@zhafron/opencode-kiro-auth)](https://www.npmjs.com/package/@zhafron/opencode-kiro-auth)
+OpenCode plugin for AWS Kiro (CodeWhisperer). It gives OpenCode access to the Claude,
+GPT-5.6 and open-weight models in your Kiro plan.
 
-OpenCode plugin for AWS Kiro (CodeWhisperer) providing access to Claude Sonnet and Haiku
-models with substantial trial quotas.
+> This is a personal fork of
+> [tickernelz/opencode-kiro-auth](https://github.com/tickernelz/opencode-kiro-auth).
+> It follows upstream v2.0.0 and adds the following:
+>
+> - **GPT-5.6 Sol, Terra and Luna**, with `-thinking` variants. Effort is sent as
+>   `reasoning.effort`, because GPT models reject Claude's `output_config.effort`.
+> - **Claude Opus 5.5**, with the full `low`–`max` effort ladder.
+> - **Silent token refresh after idle.** When an access token has expired, the plugin
+>   refreshes it and sends the request with the new token. Upstream sent the old
+>   token, which could open the AWS browser login after an idle period.
+> - **Safer startup cleanup.** The startup database sweep removes only accounts that
+>   have been unhealthy for a long time. It no longer deletes placeholder accounts
+>   that the Kiro CLI sync creates on purpose.
+>
+> This fork is not published to npm. Install it from a local clone (see
+> [Installation](#installation)).
 
 ## Features
 
@@ -19,242 +32,119 @@ models with substantial trial quotas.
   available quota.
 - **High-Performance Storage**: Efficient account and usage management using native Bun
   SQLite.
-- **Native Thinking Mode**: Full support for Claude reasoning capabilities via virtual
-  model mappings.
+- **Native Thinking Mode**: Streams Kiro's native reasoning to OpenCode's thinking
+  block, with the reasoning flags declared on every thinking model, so it renders
+  without any model configuration.
 - **Kiro Effort Mapping**: Maps OpenCode thinking budgets to Kiro's native effort
-  levels automatically.
+  levels automatically, across the full `low`–`max` ladder.
 - **Automated Recovery**: Exponential backoff for rate limits and automated token
   refresh.
 
 ## Installation
 
-Add the plugin to your `opencode.json` or `opencode.jsonc`:
+Clone and build the fork:
+
+```bash
+git clone https://github.com/aakamshpm/opencode-kiro-auth.git
+cd opencode-kiro-auth
+npm install
+npm run build
+```
+
+Then point OpenCode at the clone in `~/.config/opencode/opencode.json` or
+`opencode.jsonc`:
 
 ```json
 {
-  "plugin": ["@zhafron/opencode-kiro-auth"],
-  "provider": {
-    "kiro": {
-      "models": {
-        "claude-sonnet-4-5": {
-          "name": "Claude Sonnet 4.5",
-          "limit": { "context": 200000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] }
-        },
-        "claude-sonnet-4-5-thinking": {
-          "name": "Claude Sonnet 4.5 Thinking",
-          "limit": { "context": 200000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
-          "variants": {
-            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
-            "medium": { "thinkingConfig": { "thinkingBudget": 16384 } },
-            "high": { "thinkingConfig": { "thinkingBudget": 24576 } },
-            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
-          }
-        },
-        "claude-sonnet-4-6": {
-          "name": "Claude Sonnet 4.6",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] }
-        },
-        "claude-sonnet-4-6-thinking": {
-          "name": "Claude Sonnet 4.6 Thinking",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
-          "variants": {
-            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
-            "medium": { "thinkingConfig": { "thinkingBudget": 16384 } },
-            "high": { "thinkingConfig": { "thinkingBudget": 24576 } },
-            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
-          }
-        },
-        "claude-sonnet-5": {
-          "name": "Claude Sonnet 5",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] }
-        },
-        "claude-sonnet-5-thinking": {
-          "name": "Claude Sonnet 5 Thinking",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
-          "variants": {
-            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
-            "medium": { "thinkingConfig": { "thinkingBudget": 16384 } },
-            "high": { "thinkingConfig": { "thinkingBudget": 24576 } },
-            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
-          }
-        },
-        "claude-sonnet-5-1m": {
-          "name": "Claude Sonnet 5 (1M Context)",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] }
-        },
-        "claude-sonnet-5-1m-thinking": {
-          "name": "Claude Sonnet 5 (1M Context) Thinking",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
-          "variants": {
-            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
-            "medium": { "thinkingConfig": { "thinkingBudget": 16384 } },
-            "high": { "thinkingConfig": { "thinkingBudget": 24576 } },
-            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
-          }
-        },
-        "claude-haiku-4-5": {
-          "name": "Claude Haiku 4.5",
-          "limit": { "context": 200000, "output": 64000 },
-          "modalities": { "input": ["text", "image"], "output": ["text"] }
-        },
-        "claude-opus-4-5": {
-          "name": "Claude Opus 4.5",
-          "limit": { "context": 200000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] }
-        },
-        "claude-opus-4-5-thinking": {
-          "name": "Claude Opus 4.5 Thinking",
-          "limit": { "context": 200000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
-          "variants": {
-            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
-            "medium": { "thinkingConfig": { "thinkingBudget": 16384 } },
-            "high": { "thinkingConfig": { "thinkingBudget": 24576 } },
-            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
-          }
-        },
-        "claude-opus-4-6": {
-          "name": "Claude Opus 4.6",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] }
-        },
-        "claude-opus-4-6-thinking": {
-          "name": "Claude Opus 4.6 Thinking",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
-          "variants": {
-            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
-            "medium": { "thinkingConfig": { "thinkingBudget": 16384 } },
-            "high": { "thinkingConfig": { "thinkingBudget": 24576 } },
-            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
-          }
-        },
-        "claude-opus-4-6-1m": {
-          "name": "Claude Opus 4.6 (1M Context)",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] }
-        },
-        "claude-opus-4-6-1m-thinking": {
-          "name": "Claude Opus 4.6 (1M Context) Thinking",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
-          "variants": {
-            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
-            "medium": { "thinkingConfig": { "thinkingBudget": 16384 } },
-            "high": { "thinkingConfig": { "thinkingBudget": 24576 } },
-            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
-          }
-        },
-        "claude-opus-4-7": {
-          "name": "Claude Opus 4.7",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] }
-        },
-        "claude-opus-4-7-thinking": {
-          "name": "Claude Opus 4.7 Thinking",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
-          "variants": {
-            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
-            "medium": { "thinkingConfig": { "thinkingBudget": 16384 } },
-            "high": { "thinkingConfig": { "thinkingBudget": 24576 } },
-            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
-          }
-        },
-        "claude-sonnet-4-5-1m": {
-          "name": "Claude Sonnet 4.5 (1M Context)",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] }
-        },
-        "claude-sonnet-4-6-1m": {
-          "name": "Claude Sonnet 4.6 (1M Context)",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] }
-        },
-        "claude-sonnet-4-6-1m-thinking": {
-          "name": "Claude Sonnet 4.6 (1M Context) Thinking",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
-          "variants": {
-            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
-            "medium": { "thinkingConfig": { "thinkingBudget": 16384 } },
-            "high": { "thinkingConfig": { "thinkingBudget": 24576 } },
-            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
-          }
-        },
-        "auto": { "name": "Auto (1.0x)" },
-        "claude-sonnet-4": {
-          "name": "Claude Sonnet 4.0 (1.3x)",
-          "limit": { "context": 200000, "output": 64000 }
-        },
-        "deepseek-3.2": {
-          "name": "DeepSeek 3.2 (0.25x)",
-          "limit": { "context": 128000, "output": 64000 }
-        },
-        "glm-5": { "name": "GLM-5 (0.5x)", "limit": { "context": 200000, "output": 64000 } },
-        "minimax-m2.5": {
-          "name": "MiniMax 2.5 (0.25x)",
-          "limit": { "context": 200000, "output": 64000 }
-        },
-        "minimax-m2.1": {
-          "name": "MiniMax 2.1 (0.15x)",
-          "limit": { "context": 200000, "output": 64000 }
-        },
-        "qwen3-coder-next": {
-          "name": "Qwen3 Coder Next (0.05x)",
-          "limit": { "context": 256000, "output": 64000 }
-        }
-      }
-    }
-  }
+  "plugin": ["/absolute/path/to/opencode-kiro-auth"]
 }
 ```
+
+That is the whole configuration. The plugin registers the `kiro` provider and
+advertises every model Kiro exposes, including a `-thinking` companion for each
+model that supports reasoning effort. Run `/models` to pick one.
+
+OpenCode loads the compiled `dist/` folder, so run `npm run build` and restart
+OpenCode after every `git pull`. Switching branches without rebuilding does not
+change what OpenCode runs.
+
+### Models
+
+| Model ID                                                                    | Context   | Rate        | Thinking variant | `xhigh` |
+| --------------------------------------------------------------------------- | --------- | ----------- | ---------------- | ------- |
+| `claude-opus-5-5`                                                           | 1M        | 2.0x        | yes              | yes     |
+| `claude-opus-5`                                                             | 1M        | 2.2x        | yes              | yes     |
+| `claude-opus-4-8`, `claude-opus-4-7`                                        | 1M        | 2.2x        | yes              | yes     |
+| `claude-opus-4-6`                                                           | 1M        | 2.2x        | yes              | no      |
+| `claude-opus-4-5`                                                           | 200K      | 2.2x        | yes              | no      |
+| `claude-sonnet-5`                                                           | 1M        | 1.3x        | yes              | yes     |
+| `claude-sonnet-4-6`                                                         | 1M        | 1.3x        | yes              | no      |
+| `claude-sonnet-4-5`                                                         | 200K      | 1.3x        | yes              | no      |
+| `claude-sonnet-4`, `claude-haiku-4-5`                                       | 200K      | 1.3x / 0.4x | no               | no      |
+| `gpt-5.6-sol`                                                               | 1M        | 4.4x        | yes              | yes     |
+| `gpt-5.6-terra`                                                             | 1M        | 2.2x        | yes              | yes     |
+| `gpt-5.6-luna`                                                              | 1M        | 0.6x        | yes              | yes     |
+| `deepseek-3.2`, `glm-5`, `minimax-m2.5`, `minimax-m2.1`, `qwen3-coder-next` | 128K–256K | 0.05x–0.5x  | no               | no      |
+| `auto`                                                                      | 200K      | 1.0x        | no               | no      |
+
+Rates and context sizes come from `kiro-cli chat --list-models`, and Kiro changes
+them over time. Run that command to see the current values for your plan.
+
+Defining `provider.kiro.models` yourself replaces the plugin's registry entirely.
+Only do that to rename or restrict models, and see the reasoning flags below if
+any of them are `-thinking` models.
 
 ### Thinking Effort Configuration
 
-Configure Kiro effort per model in your OpenCode provider model definitions by setting
-`thinkingConfig.thinkingBudget` on each model variant. The plugin automatically maps
-those budgets to Kiro's native `effort` field for supported Claude models, so you do
-not need to hardcode a global `effort` value in `~/.config/opencode/kiro.json`.
+Every effort-capable Claude model gets a `-thinking` companion, already carrying
+the reasoning flags and an effort ladder as variants. Nothing to configure: pick a
+`-thinking` model and cycle its variants to change reasoning depth.
+
+Each `-thinking` entry declares two fields that OpenCode needs in order to render
+reasoning:
 
 ```json
 {
-  "provider": {
-    "kiro": {
-      "models": {
-        "claude-opus-4-7-thinking": {
-          "name": "Claude Opus 4.7 Thinking",
-          "limit": { "context": 1000000, "output": 64000 },
-          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
-          "variants": {
-            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
-            "medium": { "thinkingConfig": { "thinkingBudget": 16384 } },
-            "high": { "thinkingConfig": { "thinkingBudget": 24576 } },
-            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
-          }
-        }
-      }
-    }
-  }
+  "reasoning": true,
+  "interleaved": { "field": "reasoning_content" }
 }
 ```
 
-Budget mapping:
+Both are required. `reasoning` declares the capability, and `interleaved.field`
+tells OpenCode that reasoning arrives in the non-standard `reasoning_content`
+delta this plugin emits. If either is missing, OpenCode silently drops every
+reasoning chunk and no thinking block appears.
+
+If you override `provider.kiro.models` in your own config, you replace the
+plugin's registry wholesale — copy both fields onto any `-thinking` model you
+define, or reasoning will stop rendering.
+
+Reasoning itself comes from the API: Kiro streams `reasoningContentEvent` on
+thinking models, and the plugin forwards each one as a `reasoning_content` delta.
+Nothing needs to be enabled for that. Models that instead inline reasoning as
+`<thinking>` tags in their answer are still handled, via a fallback scraper.
+
+Variants set `thinkingConfig.thinkingBudget`, which the plugin maps to Kiro's
+native `effort` field. Bands are scaled to Kiro's real thinking ceiling
+(1024-128000 on opus-4.8/opus-5), so every effort level including `xhigh` is
+reachable from a budget alone:
 
 | OpenCode budget | Kiro effort |
 | --------------- | ----------- |
-| `<= 10000` | `low` |
-| `<= 20000` | `medium` |
-| `<= 28000` | `high` |
-| `> 28000` | `max` |
+| `<= 16384`      | `low`       |
+| `<= 32768`      | `medium`    |
+| `<= 65536`      | `high`      |
+| `<= 98304`      | `xhigh`     |
+| `> 98304`       | `max`       |
+
+`xhigh` is only available on opus-4.7, opus-4.8, opus-5, opus-5.5, sonnet-5 and the
+three GPT-5.6 tiers. Those models get a five-variant ladder. The other models get
+four variants, and a budget in the `xhigh` band is clamped to `max`.
+
+Claude models receive the effort level as `output_config.effort`. GPT-5.6 models
+receive it as `reasoning.effort`, because each family rejects the other's field
+with a 400 ValidationException. The plugin chooses the field from the model ID,
+so the same variants work for both.
 
 Use `~/.config/opencode/kiro.json` for plugin-wide behavior such as auth sync,
 account selection, retry limits, and `auto_effort_mapping`. A top-level `effort`
@@ -291,22 +181,29 @@ setting is a global override for all supported models, not a per-model setting.
      `idc_start_url` and `idc_region`.
 3. Configuration will be automatically managed at `~/.config/opencode/kiro.db`.
 
-## Local plugin development
-
-The simplest way to test local changes is to point OpenCode directly at your local repo
-path in `opencode.json` or `opencode.jsonc`:
-
-```json
-{
-  "plugin": ["/path/to/opencode-kiro-auth"]
-}
-```
-
-Then build and restart OpenCode to pick up changes:
+## Development
 
 ```bash
-npm run build
+npm run build      # compile to dist/
+npm run typecheck  # tsc --noEmit
+bun test           # unit tests
 ```
+
+After `npm run build`, restart OpenCode to load the new code.
+
+### Syncing with upstream
+
+```bash
+git remote add upstream https://github.com/tickernelz/opencode-kiro-auth.git  # once
+git fetch upstream
+git switch -c integrate-upstream
+git merge upstream/master
+```
+
+Resolve conflicts, run the tests, then fast-forward `main`. The fork's own additions
+are listed at the top of this README. Check each of them after a merge, because
+upstream often changes the same files (the model registry, effort, and the SDK
+client).
 
 ## Troubleshooting
 
@@ -404,7 +301,9 @@ Edit `~/.config/opencode/kiro.json`:
 - `usage_tracking_enabled`: Enable usage tracking and toast notifications.
 - `auto_effort_mapping`: Automatically map OpenCode thinking budgets to Kiro effort
   levels for supported models (default: `true`).
-- `enable_log_api_request`: Enable detailed API request logging.
+- `enable_log_api_request`: Enable detailed API request logging. Request logs
+  include the resolved `additionalModelRequestFields`, so this is how you confirm
+  which effort level actually went out on the wire.
 
 ## Storage
 

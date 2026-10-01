@@ -16,6 +16,15 @@ interface ClientCacheEntry {
 const clientCache = new Map<string, ClientCacheEntry>()
 const KIRO_CLI_MAX_ATTEMPTS = 3
 
+/**
+ * Effort field in the shape each model family expects. GPT models reject
+ * `output_config` and Claude models reject `reasoning`, so sending the wrong one
+ * returns a 400 ValidationException.
+ */
+export function buildAdditionalModelRequestFields(effort: Effort, model?: string) {
+  return model?.startsWith('gpt-') ? { reasoning: { effort } } : { output_config: { effort } }
+}
+
 export function createSdkClient(
   auth: KiroAuthDetails,
   region: string,
@@ -62,9 +71,7 @@ export function createSdkClient(
         if (args.request?.body) {
           try {
             const body = JSON.parse(args.request.body)
-            body.additionalModelRequestFields = model?.startsWith('gpt-')
-              ? { reasoning: { effort } }
-              : { output_config: { effort } }
+            body.additionalModelRequestFields = buildAdditionalModelRequestFields(effort, model)
             args.request.body = JSON.stringify(body)
           } catch {
             // If body parsing fails, continue without modification
