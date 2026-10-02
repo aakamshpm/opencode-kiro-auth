@@ -70,23 +70,23 @@ change what OpenCode runs.
 
 ### Models
 
-| Model ID                                                                    | Context   | Rate        | Thinking variant | `xhigh` |
-| --------------------------------------------------------------------------- | --------- | ----------- | ---------------- | ------- |
-| `claude-opus-5-5`                                                           | 1M        | 2.0x        | yes              | yes     |
-| `claude-opus-5`                                                             | 1M        | 2.2x        | yes              | yes     |
-| `claude-opus-4-8`, `claude-opus-4-7`                                        | 1M        | 2.2x        | yes              | yes     |
-| `claude-opus-4-6`                                                           | 1M        | 2.2x        | yes              | no      |
-| `claude-opus-4-5`                                                           | 200K      | 2.2x        | yes              | no      |
-| `claude-sonnet-5-5`                                                         | 1M        | 1.3x        | yes              | yes     |
-| `claude-sonnet-5`                                                           | 1M        | 1.3x        | yes              | yes     |
-| `claude-sonnet-4-6`                                                         | 1M        | 1.3x        | yes              | no      |
-| `claude-sonnet-4-5`                                                         | 200K      | 1.3x        | yes              | no      |
-| `claude-sonnet-4`, `claude-haiku-4-5`                                       | 200K      | 1.3x / 0.4x | no               | no      |
-| `gpt-5.6-sol`                                                               | 1M        | 4.4x        | yes              | yes     |
-| `gpt-5.6-terra`                                                             | 1M        | 2.2x        | yes              | yes     |
-| `gpt-5.6-luna`                                                              | 1M        | 0.6x        | yes              | yes     |
-| `deepseek-3.2`, `glm-5`, `minimax-m2.5`, `minimax-m2.1`, `qwen3-coder-next` | 128K–256K | 0.05x–0.5x  | no               | no      |
-| `auto`                                                                      | 200K      | 1.0x        | no               | no      |
+| Model ID                                                                    | Context   | Rate       | Thinking variant | `xhigh` |
+| --------------------------------------------------------------------------- | --------- | ---------- | ---------------- | ------- |
+| `claude-opus-5-5`                                                           | 1M        | 2.0x       | yes              | yes     |
+| `claude-opus-5`                                                             | 1M        | 2.2x       | yes              | yes     |
+| `claude-opus-4-8`, `claude-opus-4-7`                                        | 1M        | 2.2x       | yes              | yes     |
+| `claude-opus-4-6`                                                           | 1M        | 2.2x       | yes              | no      |
+| `claude-opus-4-5`                                                           | 200K      | 2.2x       | yes              | no      |
+| `claude-sonnet-5-5`                                                         | 1M        | 1.3x       | yes              | yes     |
+| `claude-sonnet-5`                                                           | 1M        | 1.3x       | yes              | yes     |
+| `claude-sonnet-4-6`                                                         | 1M        | 1.3x       | yes              | no      |
+| `claude-sonnet-4-5`                                                         | 200K      | 1.3x       | yes              | no      |
+| `claude-haiku-4-5`                                                          | 200K      | 0.4x       | no               | no      |
+| `gpt-5.6-sol`                                                               | 1M        | 4.4x       | yes              | yes     |
+| `gpt-5.6-terra`                                                             | 1M        | 2.2x       | yes              | yes     |
+| `gpt-5.6-luna`                                                              | 1M        | 0.6x       | yes              | yes     |
+| `deepseek-3.2`, `glm-5`, `minimax-m2.5`, `minimax-m2.1`, `qwen3-coder-next` | 128K–256K | 0.05x–0.5x | no               | no      |
+| `auto`                                                                      | 200K      | 1.0x       | no               | no      |
 
 Rates and context sizes come from `kiro-cli chat --list-models`, and Kiro changes
 them over time. Run that command to see the current values for your plan.

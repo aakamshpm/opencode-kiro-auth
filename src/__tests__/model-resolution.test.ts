@@ -13,7 +13,6 @@ describe('resolveKiroModel', () => {
 
   test('keeps existing supported Claude slugs intact', () => {
     expect(resolveKiroModel('claude-sonnet-4-5')).toBe('claude-sonnet-4.5')
-    expect(resolveKiroModel('claude-sonnet-4')).toBe('claude-sonnet-4')
     expect(resolveKiroModel('claude-opus-4-8')).toBe('claude-opus-4.8')
     expect(resolveKiroModel('claude-opus-4-8-thinking')).toBe('claude-opus-4.8')
     expect(resolveKiroModel('claude-opus-5')).toBe('claude-opus-5')
@@ -39,6 +38,11 @@ describe('resolveKiroModel', () => {
 
   test('supported model list excludes removed qwen3-coder-480b slug', () => {
     expect(SUPPORTED_MODELS).not.toContain('qwen3-coder-480b')
+  })
+
+  test('rejects claude-sonnet-4, which Kiro retires on 2026-10-14', () => {
+    expect(SUPPORTED_MODELS).not.toContain('claude-sonnet-4')
+    expect(() => resolveKiroModel('claude-sonnet-4')).toThrow('Unsupported model: claude-sonnet-4')
   })
 
   test('rejects unknown slugs', () => {

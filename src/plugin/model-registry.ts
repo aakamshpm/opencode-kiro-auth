@@ -39,12 +39,6 @@ const MODEL_SPECS: Record<string, ModelSpec> = {
   auto: { name: 'Auto', rate: '1.0x', limit: CONTEXT_200K, modalities: MULTIMODAL },
 
   // Claude Sonnet
-  'claude-sonnet-4': {
-    name: 'Claude Sonnet 4.0',
-    rate: '1.3x',
-    limit: CONTEXT_200K,
-    modalities: MULTIMODAL
-  },
   'claude-sonnet-4-5': {
     name: 'Claude Sonnet 4.5',
     rate: '1.3x',
