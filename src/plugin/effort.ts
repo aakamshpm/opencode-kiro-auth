@@ -24,8 +24,10 @@ export const THINKING_BUDGETS: Readonly<Record<Effort, number>> = {
 
 /**
  * Models that support the 5-value effort enum (including xhigh).
- * Per Kiro's effort docs, this is opus-4.7/4.8/5/5.5 and sonnet-5. The GPT-5.6
+ * Per Kiro's effort docs, this is opus-4.7/4.8/5/5.5 and sonnet-5/5.5. The GPT-5.6
  * tiers accept the same five levels through `reasoning.effort` (see sdk-client.ts).
+ * The API reports the accepted enum in its 400 ValidationException, which is how
+ * new entries here should be verified.
  */
 const XHIGH_CAPABLE_MODELS = new Set([
   'claude-opus-4.7',
@@ -34,6 +36,7 @@ const XHIGH_CAPABLE_MODELS = new Set([
   'claude-opus-5.5',
   'claude-sonnet-5',
   'claude-sonnet-5-1m',
+  'claude-sonnet-5.5',
   'gpt-5.6-sol',
   'gpt-5.6-terra',
   'gpt-5.6-luna'

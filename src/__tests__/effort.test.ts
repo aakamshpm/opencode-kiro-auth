@@ -26,13 +26,14 @@ describe('effort module', () => {
   })
 
   describe('supportsXHighEffort', () => {
-    test('returns true for opus 4.7/4.8/5/5.5, sonnet 5 and GPT-5.6', () => {
+    test('returns true for opus 4.7/4.8/5/5.5, sonnet 5/5.5 and GPT-5.6', () => {
       expect(supportsXHighEffort('claude-opus-4.8')).toBe(true)
       expect(supportsXHighEffort('claude-opus-4.7')).toBe(true)
       expect(supportsXHighEffort('claude-opus-5')).toBe(true)
       expect(supportsXHighEffort('claude-opus-5.5')).toBe(true)
       expect(supportsXHighEffort('claude-sonnet-5')).toBe(true)
       expect(supportsXHighEffort('claude-sonnet-5-1m')).toBe(true)
+      expect(supportsXHighEffort('claude-sonnet-5.5')).toBe(true)
       expect(supportsXHighEffort('gpt-5.6-sol')).toBe(true)
       expect(supportsXHighEffort('gpt-5.6-terra')).toBe(true)
       expect(supportsXHighEffort('gpt-5.6-luna')).toBe(true)

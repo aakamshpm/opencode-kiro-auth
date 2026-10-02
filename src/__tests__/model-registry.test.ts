@@ -14,6 +14,7 @@ const XHIGH_MODELS = [
   'claude-opus-5-thinking',
   'claude-opus-5-5-thinking',
   'claude-sonnet-5-thinking',
+  'claude-sonnet-5-5-thinking',
   'gpt-5.6-sol-thinking',
   'gpt-5.6-terra-thinking',
   'gpt-5.6-luna-thinking'
@@ -38,6 +39,7 @@ describe('model registry', () => {
         'claude-sonnet-4-5-thinking',
         'claude-sonnet-4-6-thinking',
         'claude-sonnet-5-thinking',
+        'claude-sonnet-5-5-thinking',
         'gpt-5.6-sol-thinking',
         'gpt-5.6-terra-thinking',
         'gpt-5.6-luna-thinking'
@@ -61,6 +63,13 @@ describe('model registry', () => {
   test('advertises Claude Opus 5.5 with its own rate', () => {
     expect(registry['claude-opus-5-5'].name).toBe('Claude Opus 5.5 (2.0x)')
     expect(resolveKiroModel('claude-opus-5-5-thinking')).toBe('claude-opus-5.5')
+  })
+
+  test('advertises Claude Sonnet 5.5 with 1M context and the Sonnet rate', () => {
+    expect(registry['claude-sonnet-5-5'].name).toBe('Claude Sonnet 5.5 (1.3x)')
+    expect(registry['claude-sonnet-5-5'].limit).toEqual({ context: 1000000, output: 64000 })
+    expect(resolveKiroModel('claude-sonnet-5-5')).toBe('claude-sonnet-5.5')
+    expect(resolveKiroModel('claude-sonnet-5-5-thinking')).toBe('claude-sonnet-5.5')
   })
 
   describe('reasoning capability flags', () => {

@@ -9,7 +9,7 @@ GPT-5.6 and open-weight models in your Kiro plan.
 >
 > - **GPT-5.6 Sol, Terra and Luna**, with `-thinking` variants. Effort is sent as
 >   `reasoning.effort`, because GPT models reject Claude's `output_config.effort`.
-> - **Claude Opus 5.5**, with the full `low`–`max` effort ladder.
+> - **Claude Opus 5.5 and Sonnet 5.5**, with the full `low`–`max` effort ladder.
 > - **Silent token refresh after idle.** When an access token has expired, the plugin
 >   refreshes it and sends the request with the new token. Upstream sent the old
 >   token, which could open the AWS browser login after an idle period.
@@ -77,6 +77,7 @@ change what OpenCode runs.
 | `claude-opus-4-8`, `claude-opus-4-7`                                        | 1M        | 2.2x        | yes              | yes     |
 | `claude-opus-4-6`                                                           | 1M        | 2.2x        | yes              | no      |
 | `claude-opus-4-5`                                                           | 200K      | 2.2x        | yes              | no      |
+| `claude-sonnet-5-5`                                                         | 1M        | 1.3x        | yes              | yes     |
 | `claude-sonnet-5`                                                           | 1M        | 1.3x        | yes              | yes     |
 | `claude-sonnet-4-6`                                                         | 1M        | 1.3x        | yes              | no      |
 | `claude-sonnet-4-5`                                                         | 200K      | 1.3x        | yes              | no      |
@@ -137,8 +138,8 @@ reachable from a budget alone:
 | `<= 98304`      | `xhigh`     |
 | `> 98304`       | `max`       |
 
-`xhigh` is only available on opus-4.7, opus-4.8, opus-5, opus-5.5, sonnet-5 and the
-three GPT-5.6 tiers. Those models get a five-variant ladder. The other models get
+`xhigh` is only available on opus-4.7, opus-4.8, opus-5, opus-5.5, sonnet-5,
+sonnet-5.5 and the three GPT-5.6 tiers. Those models get a five-variant ladder. The other models get
 four variants, and a budget in the `xhigh` band is clamped to `max`.
 
 Claude models receive the effort level as `output_config.effort`. GPT-5.6 models
