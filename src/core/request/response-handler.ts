@@ -1,5 +1,6 @@
 import { restoreToolName } from '../../infrastructure/transformers/tool-transformer.js'
 import { parseEventStream } from '../../plugin/response'
+import { throwIfEmptyResponse } from '../../plugin/streaming/empty-response.js'
 import { transformKiroStream } from '../../plugin/streaming/index.js'
 import { transformSdkStream } from '../../plugin/streaming/sdk-stream-transformer.js'
 import type { ToolNameMap } from '../../plugin/types.js'
@@ -93,6 +94,7 @@ export class ResponseHandler {
   ): Promise<Response> {
     const text = await response.text()
     const p = parseEventStream(text, model)
+    throwIfEmptyResponse({ model, text: p.content, toolCalls: p.toolCalls, hadReasoning: false })
     const oai: any = {
       id: conversationId,
       object: 'chat.completion',
@@ -109,6 +111,9 @@ export class ResponseHandler {
         prompt_tokens: p.inputTokens || 0,
         completion_tokens: p.outputTokens || 0,
         total_tokens: (p.inputTokens || 0) + (p.outputTokens || 0)
+        // No cache_*_input_tokens here: this is the raw-HTTP event stream
+        // (parseEventStream), whose wire format never carries cache token
+        // counts — see the same note on stream-transformer.ts.
       }
     }
 
@@ -140,6 +145,8 @@ export class ResponseHandler {
     const toolCallOrder: string[] = []
     let inputTokens = 0
     let outputTokens = 0
+    let cacheReadInputTokens = 0
+    let cacheCreationInputTokens = 0
 
     const eventStream = sdkResponse.generateAssistantResponseResponse
     if (eventStream) {
@@ -169,8 +176,15 @@ export class ResponseHandler {
           }
         }
         if (event.metadataEvent?.tokenUsage) {
-          inputTokens = event.metadataEvent.tokenUsage.inputTokens || 0
-          outputTokens = event.metadataEvent.tokenUsage.outputTokens || 0
+          const tokenUsage = event.metadataEvent.tokenUsage
+          // TokenUsage has no `inputTokens` field (see TokenUsage in
+          // @aws/codewhisperer-streaming-client's models_0.d.ts) — it's
+          // `uncachedInputTokens`. Reading the wrong name always produced
+          // prompt_tokens: 0 on this non-streaming path.
+          inputTokens = tokenUsage.uncachedInputTokens || 0
+          outputTokens = tokenUsage.outputTokens || 0
+          cacheReadInputTokens = tokenUsage.cacheReadInputTokens || 0
+          cacheCreationInputTokens = tokenUsage.cacheWriteInputTokens || 0
         }
       }
     }
@@ -181,6 +195,8 @@ export class ResponseHandler {
         (toolCall): toolCall is AccumulatedToolCall & { name: string } =>
           typeof toolCall?.name === 'string'
       )
+
+    throwIfEmptyResponse({ model, text: content, toolCalls, hadReasoning: false })
 
     const oai: any = {
       id: conversationId,
@@ -197,7 +213,9 @@ export class ResponseHandler {
       usage: {
         prompt_tokens: inputTokens,
         completion_tokens: outputTokens,
-        total_tokens: inputTokens + outputTokens
+        total_tokens: inputTokens + outputTokens,
+        cache_creation_input_tokens: cacheCreationInputTokens,
+        cache_read_input_tokens: cacheReadInputTokens
       }
     }
 

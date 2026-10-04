@@ -3,6 +3,7 @@ import { restoreToolName } from '../../infrastructure/transformers/tool-transfor
 import { getContextWindowSize } from '../models.js'
 import { estimateTokens } from '../response.js'
 import type { ToolNameMap } from '../types.js'
+import { throwIfEmptyResponse } from './empty-response.js'
 import { convertToOpenAI } from './openai-converter.js'
 import { findRealTag } from './stream-parser.js'
 import { createTextDeltaEvents, createThinkingDeltaEvents, stopBlock } from './stream-state.js'
@@ -42,6 +43,8 @@ export async function* transformSdkStream(
   let textOnlyContent = ''
   let outputTokens = 0
   let inputTokens = 0
+  let cacheReadInputTokens = 0
+  let cacheCreationInputTokens = 0
   let contextUsagePercentage: number | null = null
   const toolCallFragments = new Map<string, PendingToolCall>()
   const toolCallOrder: string[] = []
@@ -184,6 +187,17 @@ export async function* transformSdkStream(
         if (event.metadataEvent.contextUsagePercentage) {
           contextUsagePercentage = event.metadataEvent.contextUsagePercentage
         }
+        // The SDK's TokenUsage carries prompt-cache counters on this event;
+        // forward them instead of hardcoding zero in the final usage report.
+        const tokenUsage = (event.metadataEvent as any).tokenUsage
+        if (tokenUsage) {
+          if (typeof tokenUsage.cacheReadInputTokens === 'number') {
+            cacheReadInputTokens = tokenUsage.cacheReadInputTokens
+          }
+          if (typeof tokenUsage.cacheWriteInputTokens === 'number') {
+            cacheCreationInputTokens = tokenUsage.cacheWriteInputTokens
+          }
+        }
       } else if ((event as any).contextUsageEvent) {
         const cue = (event as any).contextUsageEvent
         if (cue.contextUsagePercentage) {
@@ -304,6 +318,16 @@ export async function* transformSdkStream(
       inputTokens = Math.max(0, totalTokens - outputTokens)
     }
 
+    // Never resolve an empty stream as success: with no text and no tool
+    // calls the caller would record a phantom empty turn. Throwing fails the
+    // SSE stream so opencode surfaces (and can retry) the request instead.
+    throwIfEmptyResponse({
+      model,
+      text: textOnlyContent,
+      toolCalls,
+      hadReasoning: sawNativeReasoning || streamState.thinkingBlockIndex !== null
+    })
+
     {
       const _c = convertToOpenAI(
         {
@@ -312,8 +336,8 @@ export async function* transformSdkStream(
           usage: {
             input_tokens: inputTokens,
             output_tokens: outputTokens,
-            cache_creation_input_tokens: 0,
-            cache_read_input_tokens: 0
+            cache_creation_input_tokens: cacheCreationInputTokens,
+            cache_read_input_tokens: cacheReadInputTokens
           }
         },
         conversationId,

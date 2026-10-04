@@ -3,6 +3,7 @@ import { restoreToolName } from '../../infrastructure/transformers/tool-transfor
 import { getContextWindowSize } from '../models.js'
 import { estimateTokens } from '../response.js'
 import type { ToolNameMap } from '../types.js'
+import { throwIfEmptyResponse } from './empty-response.js'
 import { convertToOpenAI } from './openai-converter.js'
 import { findRealTag, parseStreamBuffer } from './stream-parser.js'
 import { createTextDeltaEvents, createThinkingDeltaEvents, stopBlock } from './stream-state.js'
@@ -305,6 +306,16 @@ export async function* transformKiroStream(
       inputTokens = Math.max(0, totalTokens - outputTokens)
     }
 
+    // Never resolve an empty stream as success: with no text and no tool
+    // calls the caller would record a phantom empty turn. Throwing fails the
+    // SSE stream so opencode surfaces (and can retry) the request instead.
+    throwIfEmptyResponse({
+      model,
+      text: textOnlyContent,
+      toolCalls,
+      hadReasoning: streamState.thinkingBlockIndex !== null
+    })
+
     {
       const _c = convertToOpenAI(
         {
@@ -313,6 +324,9 @@ export async function* transformKiroStream(
           usage: {
             input_tokens: inputTokens,
             output_tokens: outputTokens,
+            // This is the raw-HTTP event stream, not the SDK. Its wire format
+            // only exposes contextUsagePercentage, not per-request cache
+            // token counts, so these stay at 0 — there is nothing to read.
             cache_creation_input_tokens: 0,
             cache_read_input_tokens: 0
           }
