@@ -63,7 +63,7 @@ describe('empty response guard', () => {
     const err = await collectSdk(events, 'claude-sonnet-5-5-thinking').catch((e) => e)
     expect(err).toBeInstanceOf(EmptyResponseError)
     expect(err.message).toMatch(/no answer followed/)
-    expect(err.message).toMatch(/closed the stream early/)
+    expect(err.message).toMatch(/REASONING_EXTRACTION/)
     // The budget/effort theory was disproven: failing turns streamed as
     // little as 170 chars of reasoning, so no such advice should be given.
     expect(err.message).not.toMatch(/budget|effort/)

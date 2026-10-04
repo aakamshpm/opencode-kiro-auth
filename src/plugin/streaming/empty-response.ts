@@ -10,16 +10,27 @@
  *
  * Observed cause: Kiro returns HTTP 200 and ends the event stream early,
  * with no text and no tool calls. This is a provider-side fault, not
- * something caused by the request transform. Retrying usually succeeds.
+ * something caused by the request transform.
+ *
+ * Confirmed against kiro-cli (the official client, independent of this
+ * plugin's request construction): it hits the identical failure under the
+ * same conditions (long, tool-result-heavy sessions) and names it
+ * `REASONING_EXTRACTION`, telling the user to switch models, start a new
+ * session, or rewind to an earlier point — notably not just "retry". A
+ * same-request retry can still succeed since the failure wasn't
+ * deterministic in testing, but it's not reliable the way a transient
+ * network blip would be.
  */
 export class EmptyResponseError extends Error {
   constructor(model: string, hadReasoning: boolean) {
     super(
       `Kiro returned an empty response (model: ${model}): no text${
         hadReasoning ? ' (reasoning was streamed but no answer followed)' : ', reasoning,'
-      } or tool calls. Kiro closed the stream early — this is usually transient,` +
-        ` so retry the request. If it keeps happening, try a different model` +
-        ` or start a new session to shrink the context.`
+      } or tool calls. This matches Kiro's own REASONING_EXTRACTION failure` +
+        ` (seen in kiro-cli too, so it's not specific to this plugin) — the` +
+        ` model got stuck finalizing its response. Retrying the same request` +
+        ` sometimes works, but if it keeps happening, switch models, start a` +
+        ` new session, or rewind to an earlier point in the conversation.`
     )
     this.name = 'EmptyResponseError'
   }

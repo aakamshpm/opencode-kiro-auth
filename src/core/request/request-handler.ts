@@ -138,6 +138,28 @@ export class RequestHandler {
       if (apiTimestamp) {
         this.logSdkRequest(sdkPrep, acc, apiTimestamp)
       }
+      // TEMP DIAGNOSTIC (empty-response investigation): dump the exact
+      // conversationState sent to the SDK, full fidelity, when
+      // KIRO_DUMP_RAW_REQUESTS is set. Remove once root-caused.
+      if (process.env.KIRO_DUMP_RAW_REQUESTS) {
+        void import('node:fs').then(({ writeFileSync }) => {
+          const ts = new Date().toISOString().replace(/[:.]/g, '-')
+          writeFileSync(
+            `${process.env.KIRO_DUMP_RAW_REQUESTS}/${ts}_full.json`,
+            JSON.stringify(
+              {
+                model: sdkPrep.effectiveModel,
+                effort: sdkPrep.effort,
+                region: sdkPrep.region,
+                profileArn: sdkPrep.profileArn,
+                conversationState: sdkPrep.conversationState
+              },
+              null,
+              2
+            )
+          )
+        })
+      }
       try {
         const client = createSdkClient(auth, sdkPrep.region, sdkPrep.effort, sdkPrep.effectiveModel)
         const command = new GenerateAssistantResponseCommand({
