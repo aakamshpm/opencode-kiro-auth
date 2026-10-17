@@ -95,7 +95,7 @@ export function buildHistory(msgs: any[], resolved: string): CodeWhispererMessag
           if (p.type === 'tool_result') {
             trs.push({
               content: [{ text: getContentText(p.content || p) }],
-              status: 'success',
+              status: p.is_error ? 'error' : 'success',
               toolUseId: p.tool_use_id
             })
           }

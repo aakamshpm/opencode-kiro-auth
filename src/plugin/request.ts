@@ -171,7 +171,7 @@ function buildCodeWhispererRequest(
         if (p.type === 'tool_result') {
           curTrs.push({
             content: [{ text: getContentText(p.content || p) }],
-            status: 'success',
+            status: p.is_error ? 'error' : 'success',
             toolUseId: p.tool_use_id
           })
         }
