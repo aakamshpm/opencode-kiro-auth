@@ -183,8 +183,11 @@ export function validateMessagesBody(body: any): void {
     throw new AnthropicRequestError('messages: at least one message is required')
   }
   body.messages.forEach((m: any, i: number) => {
-    if (m?.role !== 'user' && m?.role !== 'assistant') {
-      throw new AnthropicRequestError(`messages.${i}.role: must be 'user' or 'assistant'`)
+    // Claude Code interleaves `system` turns; RequestHandler folds them into the system prompt.
+    if (m?.role !== 'user' && m?.role !== 'assistant' && m?.role !== 'system') {
+      throw new AnthropicRequestError(
+        `messages.${i}.role: must be 'user', 'assistant' or 'system' (got ${JSON.stringify(m?.role)})`
+      )
     }
     if (typeof m.content !== 'string' && !Array.isArray(m.content)) {
       throw new AnthropicRequestError(`messages.${i}.content: must be a string or an array`)

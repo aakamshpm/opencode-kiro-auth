@@ -205,6 +205,22 @@ describe('toInternalRequest', () => {
     ).not.toHaveProperty('thinkingConfig')
   })
 
+  test('accepts interleaved system turns, which the handler folds into the system prompt', () => {
+    const { body } = toInternalRequest(
+      base({
+        messages: [
+          { role: 'user', content: 'hi' },
+          { role: 'system', content: [{ type: 'text', text: 'reminder' }] }
+        ]
+      }),
+      MODELS
+    )
+    expect((body.messages as any[])[1]).toEqual({
+      role: 'system',
+      content: [{ type: 'text', text: 'reminder' }]
+    })
+  })
+
   test('keeps custom tools and drops server-side tools; ignores metadata', () => {
     const { body } = toInternalRequest(
       base({
@@ -224,7 +240,7 @@ describe('toInternalRequest', () => {
     [{ messages: [] }, 400],
     [{ max_tokens: 0 }, 400],
     [{ model: undefined }, 400],
-    [{ messages: [{ role: 'system', content: 'x' }] }, 400],
+    [{ messages: [{ role: 'tool', content: 'x' }] }, 400],
     [{ model: 'gpt-4o' }, 404]
   ])('rejects %j with %d', (patch, status) => {
     try {
