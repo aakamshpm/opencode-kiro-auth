@@ -7,6 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node scripts/fix-esm-imports.mjs",
+    "serve": "bun run src/server/index.ts",
     "format": "prettier --write 'src/**/*.ts'",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
