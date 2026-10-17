@@ -1,12 +1,8 @@
 import { tool } from '@opencode-ai/plugin'
+import { createKiroRuntime } from './bootstrap.js'
 import { KIRO_CONSTANTS } from './constants.js'
-import { AuthHandler } from './core/auth/auth-handler.js'
-import { RequestHandler } from './core/request/request-handler.js'
-import { AccountCache } from './infrastructure/database/account-cache.js'
-import { AccountRepository } from './infrastructure/database/account-repository.js'
 import { AccountManager } from './plugin/accounts.js'
 import { bootstrapAuthIfNeeded } from './plugin/auth-bootstrap.js'
-import { loadConfig } from './plugin/config/index.js'
 import { buildModelRegistry } from './plugin/model-registry.js'
 import { formatWebSearchResults, kiroWebSearch } from './plugin/web-search.js'
 
@@ -66,20 +62,14 @@ function buildTools(config: any, accountManager: AccountManager): Record<string,
 export const createKiroPlugin =
   (id: string) =>
   async ({ client, directory }: any) => {
-    const config = loadConfig(directory)
-
     const showToast: ToastFunction = (message: string, variant: string) => {
       client.tui.showToast({ body: { message, variant } }).catch(() => {})
     }
 
-    const cache = new AccountCache(60000)
-    const repository = new AccountRepository(cache)
-
-    const authHandler = new AuthHandler(config, repository)
-    const accountManager = await AccountManager.loadFromDisk(config.account_selection_strategy)
-    authHandler.setAccountManager(accountManager)
-
-    const requestHandler = new RequestHandler(accountManager, config, repository, client)
+    const { config, authHandler, accountManager, requestHandler } = await createKiroRuntime(
+      directory,
+      client
+    )
 
     // Compute the base URL once so both the config hook and auth loader use the same value
     const baseURL = KIRO_CONSTANTS.BASE_URL.replace('/generateAssistantResponse', '').replace(

@@ -17,6 +17,13 @@ const getLogDir = () => {
   return join(base, 'kiro-logs')
 }
 
+let mirrorToStderr = false
+
+/** Echo log lines to stderr as well (server mode, so journald captures them). */
+export function enableStderrMirror(): void {
+  mirrorToStderr = true
+}
+
 const writeToFile = (level: string, message: string, ...args: unknown[]) => {
   try {
     const dir = getLogDir()
@@ -39,6 +46,7 @@ const writeToFile = (level: string, message: string, ...args: unknown[]) => {
       })
       .join(' ')}\n`
     appendFileSync(path, content)
+    if (mirrorToStderr) process.stderr.write(content)
   } catch (e) {}
 }
 
