@@ -1,5 +1,7 @@
 import { timingSafeEqual } from 'node:crypto'
+import type { HandleOptions } from '../core/request/request-handler.js'
 import * as logger from '../plugin/logger.js'
+import { anthropicError, handleCountTokens, handleMessages } from './anthropic.js'
 
 export type ToastVariant = 'info' | 'warning' | 'success' | 'error'
 export type ToastFunction = (message: string, variant: ToastVariant) => void
@@ -13,7 +15,8 @@ export interface ServerDeps {
   handle: (
     input: string,
     init: { method: string; body: string },
-    toast: ToastFunction
+    toast: ToastFunction,
+    options?: HandleOptions
   ) => Promise<Response>
   /** Model registry keyed by client-facing model ID. */
   models: () => Record<string, any>
@@ -47,7 +50,7 @@ function openAIError(message: string, status: number, type = 'api_error', code?:
 }
 
 /** RequestHandler throws `Kiro Error: <status>`; keep rate limits distinguishable. */
-function upstreamStatus(message: string): number {
+export function upstreamStatus(message: string): number {
   return /Kiro Error: 429\b/.test(message) ? 429 : 502
 }
 
@@ -236,14 +239,24 @@ export function createApp(deps: ServerDeps): (req: Request) => Promise<Response>
 
     if (pathname === '/health' && req.method === 'GET') return json({ status: 'ok' })
 
+    // Anthropic clients parse a different error envelope than OpenAI ones.
+    const anthropicRoute = pathname.startsWith('/v1/messages')
+
     if (!safeEqual(extractKey(req), deps.apiKey)) {
-      return openAIError('Invalid or missing API key', 401, 'authentication_error')
+      return anthropicRoute
+        ? anthropicError('invalid x-api-key', 401)
+        : openAIError('Invalid or missing API key', 401, 'authentication_error')
     }
 
     if (pathname === '/v1/models' && req.method === 'GET') return listModels(deps)
     if (pathname === '/v1/chat/completions' && req.method === 'POST') {
       return chatCompletions(req, deps)
     }
+    if (pathname === '/v1/messages' && req.method === 'POST') return handleMessages(req, deps)
+    if (pathname === '/v1/messages/count_tokens' && req.method === 'POST') {
+      return handleCountTokens(req)
+    }
+    if (anthropicRoute) return anthropicError(`No route for ${req.method} ${pathname}`, 404)
     return openAIError(`No route for ${req.method} ${pathname}`, 404, 'invalid_request_error')
   }
 }

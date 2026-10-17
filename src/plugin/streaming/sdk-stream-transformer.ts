@@ -7,7 +7,20 @@ import { throwIfEmptyResponse } from './empty-response.js'
 import { convertToOpenAI } from './openai-converter.js'
 import { findRealTag } from './stream-parser.js'
 import { createTextDeltaEvents, createThinkingDeltaEvents, stopBlock } from './stream-state.js'
-import { StreamState, THINKING_END_TAG, THINKING_START_TAG, ToolCallState } from './types.js'
+import {
+  StreamEvent,
+  StreamState,
+  THINKING_END_TAG,
+  THINKING_START_TAG,
+  ToolCallState
+} from './types.js'
+
+/**
+ * Wire shape of the yielded chunks. The stream is built from Anthropic-style
+ * events; `anthropic` yields them untouched (framing is the caller's job) and
+ * `openai` flattens them into chat.completion.chunk objects.
+ */
+export type SdkStreamFormat = 'openai' | 'anthropic'
 
 interface PendingToolCall {
   toolUseId: string
@@ -19,8 +32,11 @@ export async function* transformSdkStream(
   sdkResponse: any,
   model: string,
   conversationId: string,
-  toolNameMap?: ToolNameMap
+  toolNameMap?: ToolNameMap,
+  format: SdkStreamFormat = 'openai'
 ): AsyncGenerator<any> {
+  const toWire = (ev: StreamEvent): any =>
+    format === 'anthropic' ? ev : convertToOpenAI(ev, conversationId, model)
   const thinkingRequested = true
 
   const streamState: StreamState = {
@@ -63,7 +79,7 @@ export async function* transformSdkStream(
         if (typeof reasoning === 'string' && reasoning.length > 0) {
           sawNativeReasoning = true
           for (const ev of createThinkingDeltaEvents(reasoning, streamState)) {
-            const chunk = convertToOpenAI(ev, conversationId, model)
+            const chunk = toWire(ev)
             if (chunk !== null) yield chunk
           }
         }
@@ -77,7 +93,7 @@ export async function* transformSdkStream(
         if (sawNativeReasoning && !streamState.thinkingExtracted) {
           streamState.thinkingExtracted = true
           for (const ev of stopBlock(streamState.thinkingBlockIndex, streamState)) {
-            const chunk = convertToOpenAI(ev, conversationId, model)
+            const chunk = toWire(ev)
             if (chunk !== null) yield chunk
           }
         }
@@ -85,7 +101,7 @@ export async function* transformSdkStream(
         if (!thinkingRequested) {
           for (const ev of createTextDeltaEvents(text, streamState)) {
             {
-              const _c = convertToOpenAI(ev, conversationId, model)
+              const _c = toWire(ev)
               if (_c !== null) yield _c
             }
           }
@@ -159,7 +175,7 @@ export async function* transformSdkStream(
         }
 
         for (const ev of deltaEvents) {
-          const chunk = convertToOpenAI(ev, conversationId, model)
+          const chunk = toWire(ev)
           if (chunk !== null) yield chunk
         }
       } else if (event.toolUseEvent) {
@@ -213,21 +229,21 @@ export async function* transformSdkStream(
     if (thinkingRequested && streamState.buffer) {
       if (streamState.inThinking) {
         for (const ev of createThinkingDeltaEvents(streamState.buffer, streamState)) {
-          const _c = convertToOpenAI(ev, conversationId, model)
+          const _c = toWire(ev)
           if (_c !== null) yield _c
         }
         streamState.buffer = ''
         for (const ev of createThinkingDeltaEvents('', streamState)) {
-          const _c = convertToOpenAI(ev, conversationId, model)
+          const _c = toWire(ev)
           if (_c !== null) yield _c
         }
         for (const ev of stopBlock(streamState.thinkingBlockIndex, streamState)) {
-          const _c = convertToOpenAI(ev, conversationId, model)
+          const _c = toWire(ev)
           if (_c !== null) yield _c
         }
       } else {
         for (const ev of createTextDeltaEvents(streamState.buffer, streamState)) {
-          const _c = convertToOpenAI(ev, conversationId, model)
+          const _c = toWire(ev)
           if (_c !== null) yield _c
         }
         streamState.buffer = ''
@@ -235,7 +251,7 @@ export async function* transformSdkStream(
     }
 
     for (const ev of stopBlock(streamState.textBlockIndex, streamState)) {
-      const _c = convertToOpenAI(ev, conversationId, model)
+      const _c = toWire(ev)
       if (_c !== null) yield _c
     }
 
@@ -258,20 +274,16 @@ export async function* transformSdkStream(
         const blockIndex = baseIndex + i
 
         {
-          const _c = convertToOpenAI(
-            {
-              type: 'content_block_start',
-              index: blockIndex,
-              content_block: {
-                type: 'tool_use',
-                id: tc.toolUseId,
-                name: tc.name,
-                input: {}
-              }
-            },
-            conversationId,
-            model
-          )
+          const _c = toWire({
+            type: 'content_block_start',
+            index: blockIndex,
+            content_block: {
+              type: 'tool_use',
+              id: tc.toolUseId,
+              name: tc.name,
+              input: {}
+            }
+          })
           if (_c !== null) yield _c
         }
 
@@ -284,27 +296,19 @@ export async function* transformSdkStream(
         }
 
         {
-          const _c = convertToOpenAI(
-            {
-              type: 'content_block_delta',
-              index: blockIndex,
-              delta: {
-                type: 'input_json_delta',
-                partial_json: inputJson
-              }
-            },
-            conversationId,
-            model
-          )
+          const _c = toWire({
+            type: 'content_block_delta',
+            index: blockIndex,
+            delta: {
+              type: 'input_json_delta',
+              partial_json: inputJson
+            }
+          })
           if (_c !== null) yield _c
         }
 
         {
-          const _c = convertToOpenAI(
-            { type: 'content_block_stop', index: blockIndex },
-            conversationId,
-            model
-          )
+          const _c = toWire({ type: 'content_block_stop', index: blockIndex })
           if (_c !== null) yield _c
         }
       }
@@ -329,25 +333,21 @@ export async function* transformSdkStream(
     })
 
     {
-      const _c = convertToOpenAI(
-        {
-          type: 'message_delta',
-          delta: { stop_reason: toolCalls.length > 0 ? 'tool_use' : 'end_turn' },
-          usage: {
-            input_tokens: inputTokens,
-            output_tokens: outputTokens,
-            cache_creation_input_tokens: cacheCreationInputTokens,
-            cache_read_input_tokens: cacheReadInputTokens
-          }
-        },
-        conversationId,
-        model
-      )
+      const _c = toWire({
+        type: 'message_delta',
+        delta: { stop_reason: toolCalls.length > 0 ? 'tool_use' : 'end_turn' },
+        usage: {
+          input_tokens: inputTokens,
+          output_tokens: outputTokens,
+          cache_creation_input_tokens: cacheCreationInputTokens,
+          cache_read_input_tokens: cacheReadInputTokens
+        }
+      })
       if (_c !== null) yield _c
     }
 
     {
-      const _c = convertToOpenAI({ type: 'message_stop' }, conversationId, model)
+      const _c = toWire({ type: 'message_stop' })
       if (_c !== null) yield _c
     }
   } catch (e) {

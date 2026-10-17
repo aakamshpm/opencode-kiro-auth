@@ -6,6 +6,7 @@ import { isPermanentError } from '../../plugin/health'
 import * as logger from '../../plugin/logger'
 import { transformToSdkRequest } from '../../plugin/request'
 import { buildAdditionalModelRequestFields, createSdkClient } from '../../plugin/sdk-client'
+import type { AnthropicStreamOptions } from '../../plugin/streaming/anthropic-sse'
 import { syncFromKiroCli } from '../../plugin/sync/kiro-cli'
 import type { KiroAuthDetails, ManagedAccount, SdkPreparedRequest } from '../../plugin/types'
 import { AccountSelector } from '../account/account-selector'
@@ -16,6 +17,11 @@ import { ResponseHandler } from './response-handler'
 import { RetryStrategy } from './retry-strategy'
 
 type ToastFunction = (message: string, variant: 'info' | 'warning' | 'success' | 'error') => void
+
+export interface HandleOptions {
+  /** Answer as an Anthropic Messages event stream instead of OpenAI chunks. */
+  anthropic?: AnthropicStreamOptions
+}
 
 export const KIRO_API_PATTERN = /^(https?:\/\/)?q\.[a-z0-9-]+\.amazonaws\.com/
 const REAUTH_FAILURE_COOLDOWN_MS = 60000
@@ -45,14 +51,19 @@ export class RequestHandler {
     this.retryStrategy = new RetryStrategy(config)
   }
 
-  async handle(input: any, init: any, showToast: ToastFunction): Promise<Response> {
+  async handle(
+    input: any,
+    init: any,
+    showToast: ToastFunction,
+    options?: HandleOptions
+  ): Promise<Response> {
     const url = typeof input === 'string' ? input : input.url
 
     if (!KIRO_API_PATTERN.test(url)) {
       return fetch(input, init)
     }
 
-    return this.enqueueKiroRequest(() => this.handleKiroRequest(url, init, showToast))
+    return this.enqueueKiroRequest(() => this.handleKiroRequest(url, init, showToast, options))
   }
 
   private async enqueueKiroRequest<T>(run: () => Promise<T>): Promise<T> {
@@ -75,7 +86,8 @@ export class RequestHandler {
   private async handleKiroRequest(
     url: string,
     init: any,
-    showToast: ToastFunction
+    showToast: ToastFunction,
+    options?: HandleOptions
   ): Promise<Response> {
     const body = init?.body ? JSON.parse(init.body) : {}
     const model = this.extractModel(url) || body.model || 'claude-sonnet-4-5'
@@ -181,7 +193,8 @@ export class RequestHandler {
           model,
           sdkPrep.conversationId,
           sdkPrep.streaming,
-          sdkPrep.toolNameMap
+          sdkPrep.toolNameMap,
+          options?.anthropic
         )
       } catch (e: any) {
         const httpStatus = e?.$metadata?.httpStatusCode

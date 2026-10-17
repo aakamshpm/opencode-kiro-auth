@@ -1,5 +1,11 @@
 import { restoreToolName } from '../../infrastructure/transformers/tool-transformer.js'
 import { parseEventStream } from '../../plugin/response'
+import {
+  AnthropicStreamOptions,
+  anthropicEvents,
+  anthropicMessageId,
+  anthropicSseStream
+} from '../../plugin/streaming/anthropic-sse.js'
 import { throwIfEmptyResponse } from '../../plugin/streaming/empty-response.js'
 import { transformKiroStream } from '../../plugin/streaming/index.js'
 import { transformSdkStream } from '../../plugin/streaming/sdk-stream-transformer.js'
@@ -30,8 +36,20 @@ export class ResponseHandler {
     model: string,
     conversationId: string,
     streaming: boolean,
-    toolNameMap?: ToolNameMap
+    toolNameMap?: ToolNameMap,
+    anthropic?: AnthropicStreamOptions
   ): Promise<Response> {
+    if (anthropic) {
+      // Anthropic clients get the transformer's native events, re-framed as SSE.
+      const events = anthropicEvents(
+        transformSdkStream(sdkResponse, model, conversationId, toolNameMap, 'anthropic'),
+        anthropicMessageId(conversationId),
+        anthropic
+      )
+      return new Response(anthropicSseStream(events, anthropic.keepAliveMs), {
+        headers: { 'Content-Type': 'text/event-stream' }
+      })
+    }
     if (streaming) {
       return this.handleSdkStreaming(sdkResponse, model, conversationId, toolNameMap)
     }

@@ -24,7 +24,7 @@ async function main(): Promise<void> {
   const app = createApp({
     apiKey: env.apiKey,
     kiroUrl: buildKiroUrl(config.default_region || 'us-east-1'),
-    handle: (input, init, toast) => requestHandler.handle(input, init, toast),
+    handle: (input, init, toast, options) => requestHandler.handle(input, init, toast, options),
     models: () => models
   })
 
