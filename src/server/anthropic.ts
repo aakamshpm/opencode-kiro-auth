@@ -64,6 +64,13 @@ export function resolveAnthropicModel(id: string, models: Models): string | null
   if (wantsLongContext && Object.hasOwn(models, `${base}-1m`)) base = `${base}-1m`
   if (Object.hasOwn(models, base)) return base
 
+  // Non-Claude ids keep their dots (gpt-5.6-luna), which the normalisation above removed.
+  const exact = id
+    .trim()
+    .replace(/\[[^\]]*\]$/, '')
+    .toLowerCase()
+  if (Object.hasOwn(models, exact)) return exact
+
   if (base.startsWith('claude-')) {
     const family = FAMILY_FALLBACK.find(([name]) => base.includes(name))
     if (family && Object.hasOwn(models, family[1])) {
