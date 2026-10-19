@@ -168,6 +168,13 @@ const MODEL_SPECS: Record<string, ModelSpec> = {
     rate: '0.05x',
     limit: { context: 256000, output: 64000 },
     modalities: TEXT_ONLY
+  },
+  'kimi-k3': {
+    name: 'Kimi K3',
+    rate: '2.4x',
+    // kiro-cli does not publish limits for this model; these are conservative guesses.
+    limit: { context: 256000, output: 64000 },
+    modalities: TEXT_ONLY
   }
 }
 
