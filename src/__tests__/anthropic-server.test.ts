@@ -38,7 +38,8 @@ const MODELS = {
   'claude-sonnet-5-5-1m': {},
   'claude-haiku-4-5': {},
   'gpt-5.6-luna': {},
-  'kimi-k3': {}
+  'kimi-k3': {},
+  auto: {}
 }
 
 async function* gen(events: StreamEvent[]): AsyncGenerator<StreamEvent> {
@@ -84,7 +85,10 @@ describe('resolveAnthropicModel', () => {
     ['claude-sonnet-9-9', 'claude-sonnet-5-5'],
     ['claude-3-5-haiku-20241022', 'claude-haiku-4-5'],
     ['gpt-5.6-luna', 'gpt-5.6-luna'],
-    ['kimi-k3', 'kimi-k3']
+    ['kimi-k3', 'kimi-k3'],
+    ['auto', 'auto'],
+    ['claude-fable-5-1', 'auto'],
+    ['claude-fable-5-1[1m]', 'auto']
   ])('%s -> %s', (input, expected) => {
     expect(resolveAnthropicModel(input, MODELS)).toBe(expected)
   })

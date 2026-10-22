@@ -36,7 +36,8 @@ interface ModelSpec {
  * so both families can share the same thinking variants.
  */
 const MODEL_SPECS: Record<string, ModelSpec> = {
-  auto: { name: 'Auto', rate: '1.0x', limit: CONTEXT_200K, modalities: MULTIMODAL },
+  // Kiro does not publish a context size for Auto; 1M is from observed use.
+  auto: { name: 'Auto', rate: '1.0x', limit: CONTEXT_1M, modalities: MULTIMODAL },
 
   // Claude Sonnet
   'claude-sonnet-4-5': {

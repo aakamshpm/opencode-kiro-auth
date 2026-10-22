@@ -47,6 +47,29 @@ interface EffortConfig {
 
 type ToastFunction = (message: string, variant: 'info' | 'warning' | 'success' | 'error') => void
 
+/** How much of the system prompt feeds the conversation key. */
+const CONVERSATION_KEY_SYSTEM_CHARS = 2000
+
+/**
+ * Conversation id sent to Kiro. Random per request by default. With
+ * KIRO_STABLE_CONVERSATION_ID=1 every turn of one session shares an id, which
+ * measurably lowers credit usage (likely server-side caching).
+ *
+ * The key is the first user message plus a digit-stripped prefix of the system
+ * prompt. Clients rewrite parts of the system prompt between turns (dates, git
+ * status, version headers), so hashing all of it would change the id mid-session.
+ */
+export function deriveConversationId(system: unknown, messages: any[]): string {
+  if (process.env.KIRO_STABLE_CONVERSATION_ID !== '1') return crypto.randomUUID()
+  const first = messages.find((m: any) => m?.role === 'user')
+  const sys = (typeof system === 'string' ? system : JSON.stringify(system ?? ''))
+    .slice(0, CONVERSATION_KEY_SYSTEM_CHARS)
+    .replace(/\d+/g, '')
+  const key = JSON.stringify([sys, first ? getContentText(first) : ''])
+  const h = crypto.createHash('sha256').update(key).digest('hex')
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`
+}
+
 function buildCodeWhispererRequest(
   body: any,
   model: string,
@@ -57,8 +80,8 @@ function buildCodeWhispererRequest(
 ): TransformResult {
   const req = typeof body === 'string' ? JSON.parse(body) : body
   const { messages, tools, system } = req
-  const convId = crypto.randomUUID()
   if (!messages || messages.length === 0) throw new Error('No messages')
+  const convId = deriveConversationId(system, messages)
   const resolved = resolveKiroModel(model)
   const systemMsgs = messages.filter((m: any) => m.role === 'system')
   const otherMsgs = messages.filter((m: any) => m.role !== 'system')
