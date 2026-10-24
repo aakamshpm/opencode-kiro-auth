@@ -37,6 +37,7 @@ const MODELS = {
   'claude-sonnet-5-5': {},
   'claude-sonnet-5-5-1m': {},
   'claude-haiku-4-5': {},
+  'claude-haiku-5-5': {},
   'gpt-5.6-luna': {},
   'kimi-k3': {},
   auto: {}
@@ -83,7 +84,9 @@ describe('resolveAnthropicModel', () => {
     ['claude-haiku-4.5', 'claude-haiku-4-5'],
     ['Claude-Sonnet-5-5-latest', 'claude-sonnet-5-5'],
     ['claude-sonnet-9-9', 'claude-sonnet-5-5'],
-    ['claude-3-5-haiku-20241022', 'claude-haiku-4-5'],
+    ['claude-3-5-haiku-20241022', 'claude-haiku-5-5'],
+    ['claude-haiku-5-5', 'claude-haiku-5-5'],
+    ['claude-haiku-5.5', 'claude-haiku-5-5'],
     ['gpt-5.6-luna', 'gpt-5.6-luna'],
     ['kimi-k3', 'kimi-k3'],
     ['auto', 'auto'],

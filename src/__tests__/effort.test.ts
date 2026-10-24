@@ -17,6 +17,7 @@ describe('effort module', () => {
       expect(supportsEffort('claude-sonnet-5')).toBe(true)
       expect(supportsEffort('claude-sonnet-5-1m')).toBe(true)
       expect(supportsEffort('claude-opus-5')).toBe(true)
+      expect(supportsEffort('claude-haiku-5.5')).toBe(true)
     })
 
     test('returns false for unsupported models', () => {
@@ -34,6 +35,7 @@ describe('effort module', () => {
       expect(supportsXHighEffort('claude-sonnet-5')).toBe(true)
       expect(supportsXHighEffort('claude-sonnet-5-1m')).toBe(true)
       expect(supportsXHighEffort('claude-sonnet-5.5')).toBe(true)
+      expect(supportsXHighEffort('claude-haiku-5.5')).toBe(true)
       expect(supportsXHighEffort('gpt-5.6-sol')).toBe(true)
       expect(supportsXHighEffort('gpt-5.6-terra')).toBe(true)
       expect(supportsXHighEffort('gpt-5.6-luna')).toBe(true)

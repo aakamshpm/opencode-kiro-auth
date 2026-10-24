@@ -148,8 +148,8 @@ Edit `~/.claude/settings.json` to apply the change to every project, or
     "ANTHROPIC_MODEL": "claude-sonnet-5-5",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5-5",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "gpt-5.6-luna",
-    "ANTHROPIC_SMALL_FAST_MODEL": "gpt-5.6-luna"
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-5-5",
+    "ANTHROPIC_SMALL_FAST_MODEL": "claude-haiku-5-5"
   }
 }
 ```
@@ -162,7 +162,7 @@ Model ids:
 
 - Use the ids in the [model table](#models). Dated ids (`claude-haiku-4-5-20251001`),
   `-latest`, dotted ids (`claude-haiku-4.5`) and the `[1m]` suffix are accepted.
-- An unknown `claude-*` id falls back to its family: Haiku to `claude-haiku-4-5`,
+- An unknown `claude-*` id falls back to its family: Haiku to `claude-haiku-5-5`,
   Sonnet to `claude-sonnet-5-5`, Opus to `claude-opus-5-5`, and Fable to `auto`. Kiro has
   no Fable model.
 - To add Kiro's Auto model to the `/model` picker, add these to the same `env` block:
@@ -335,6 +335,7 @@ Accounts are stored in `~/.config/opencode/kiro.db`.
 | `claude-sonnet-5`                                                           | 1M        | 1.3x       | yes              | yes     |
 | `claude-sonnet-4-6`                                                         | 1M        | 1.3x       | yes              | no      |
 | `claude-sonnet-4-5`                                                         | 200K      | 1.3x       | yes              | no      |
+| `claude-haiku-5-5`                                                          | 1M        | 0.06x\*\*  | yes              | yes     |
 | `claude-haiku-4-5`                                                          | 200K      | 0.4x       | no               | no      |
 | `gpt-5.6-sol`                                                               | 1M        | 4.4x       | yes              | yes     |
 | `gpt-5.6-terra`                                                             | 1M        | 2.2x       | yes              | yes     |
@@ -346,6 +347,10 @@ Accounts are stored in `~/.config/opencode/kiro.db`.
 Rates and context sizes come from `kiro-cli chat --list-models` and Kiro's model page,
 and Kiro changes them over time. Run that command to see the current values for your
 plan.
+
+\*\* Two-tier pricing, per Kiro's model page: Haiku 5.5 requests up to 100K tokens use the
+listed 0.06x rate, and requests over 100K tokens are billed at 0.3x. GPT-5.6 has a similar
+split at 272K tokens (double the listed rate). Long agentic sessions can cross these lines.
 
 \* Kiro does not publish a context size for Auto. 1M is what has been observed in use.
 If Auto routes a request to a smaller model, a client may compact late and hit a
@@ -384,8 +389,8 @@ Variants set `thinkingConfig.thinkingBudget`, which maps to Kiro's native effort
 | `<= 98304`      | `xhigh`     |
 | `> 98304`       | `max`       |
 
-`xhigh` exists only on opus-4.7, opus-4.8, opus-5, opus-5.5, sonnet-5, sonnet-5.5 and the
-three GPT-5.6 tiers. Those models get a five-variant ladder. The others get four, and a
+`xhigh` exists only on opus-4.7, opus-4.8, opus-5, opus-5.5, sonnet-5, sonnet-5.5,
+haiku-5.5 and the three GPT-5.6 tiers. Those models get a five-variant ladder. The others get four, and a
 budget in the `xhigh` band is clamped to `max`.
 
 Claude models receive the effort as `output_config.effort`. GPT-5.6 models receive it as

@@ -41,7 +41,7 @@ export function anthropicError(message: string, status: number, errorType?: stri
 // ---------------------------------------------------------------------------
 
 const FAMILY_FALLBACK: Array<[string, string]> = [
-  ['haiku', 'claude-haiku-4-5'],
+  ['haiku', 'claude-haiku-5-5'],
   ['sonnet', 'claude-sonnet-5-5'],
   ['opus', 'claude-opus-5-5'],
   // Kiro has no Fable model; Auto picks a model per request at a low credit rate.

@@ -37,6 +37,8 @@ const XHIGH_CAPABLE_MODELS = new Set([
   'claude-sonnet-5',
   'claude-sonnet-5-1m',
   'claude-sonnet-5.5',
+  // kiro-cli reports reasoning "toggleable" with all five levels for haiku-5.5.
+  'claude-haiku-5.5',
   'gpt-5.6-sol',
   'gpt-5.6-terra',
   'gpt-5.6-luna'

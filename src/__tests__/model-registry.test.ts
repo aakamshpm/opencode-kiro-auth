@@ -15,6 +15,7 @@ const XHIGH_MODELS = [
   'claude-opus-5-5-thinking',
   'claude-sonnet-5-thinking',
   'claude-sonnet-5-5-thinking',
+  'claude-haiku-5-5-thinking',
   'gpt-5.6-sol-thinking',
   'gpt-5.6-terra-thinking',
   'gpt-5.6-luna-thinking'
@@ -36,6 +37,7 @@ describe('model registry', () => {
         'claude-opus-4-8-thinking',
         'claude-opus-5-thinking',
         'claude-opus-5-5-thinking',
+        'claude-haiku-5-5-thinking',
         'claude-sonnet-4-5-thinking',
         'claude-sonnet-4-6-thinking',
         'claude-sonnet-5-thinking',

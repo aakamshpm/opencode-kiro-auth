@@ -76,6 +76,16 @@ const MODEL_SPECS: Record<string, ModelSpec> = {
     limit: CONTEXT_200K,
     modalities: TEXT_IMAGE
   },
+  // Rate and 1M context per `kiro-cli chat --list-models`. Input modalities are
+  // assumed to match Haiku 4.5. Reasoning with all five effort levels was confirmed
+  // through kiro-cli's stream-json metadata.
+  'claude-haiku-5-5': {
+    name: 'Claude Haiku 5.5',
+    rate: '0.06x',
+    limit: CONTEXT_1M,
+    modalities: TEXT_IMAGE,
+    thinking: true
+  },
 
   // Claude Opus
   'claude-opus-4-5': {
