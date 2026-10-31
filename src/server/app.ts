@@ -72,13 +72,17 @@ function extractKey(req: Request): string {
  * `error` chunk, which OpenAI-compatible clients surface, rather than by
  * tearing down the connection.
  */
-function withDoneSentinel(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+export function withDoneSentinel(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder()
   const reader = body.getReader()
+  // Once the client cancels, the in-flight read settles against a closed controller.
+  // Writing to it throws, so stop touching the controller and stay quiet.
+  let cancelled = false
   return new ReadableStream<Uint8Array>({
     async pull(controller) {
       try {
         const { done, value } = await reader.read()
+        if (cancelled) return
         if (done) {
           controller.enqueue(encoder.encode('data: [DONE]\n\n'))
           controller.close()
@@ -86,6 +90,7 @@ function withDoneSentinel(body: ReadableStream<Uint8Array>): ReadableStream<Uint
           controller.enqueue(value)
         }
       } catch (e) {
+        if (cancelled) return
         const message = e instanceof Error ? e.message : String(e)
         logger.error('Stream failed mid-response', e instanceof Error ? e : new Error(message))
         const error = { error: { message, type: 'api_error' } }
@@ -94,6 +99,7 @@ function withDoneSentinel(body: ReadableStream<Uint8Array>): ReadableStream<Uint
       }
     },
     cancel(reason) {
+      cancelled = true
       return reader.cancel(reason)
     }
   })
