@@ -42,7 +42,12 @@ export const KIRO_CONSTANTS = {
   USAGE_LIMITS_URL: 'https://q.{{region}}.amazonaws.com/getUsageLimits',
   DEFAULT_REGION: 'us-east-1' as KiroRegion,
   AXIOS_TIMEOUT: 120000,
+  // Identity of the chat (streaming) client. Kiro began rejecting older client
+  // versions with "This version of Kiro is no longer supported" on 2026-11-09
+  // (kirodotdev/Kiro#11335; CLI floor 1.28.2 / IDE floor 0.11.133). A bare
+  // 'KiroIDE' with no version sits below that, so present as kiro-cli/<ver>.
   USER_AGENT: 'KiroIDE',
+  KIRO_CLIENT_VERSION: '2.33.1',
   SDK_VERSION: '3.738.0',
   SDK_VERSION_USAGE: '3.0.0',
   CHAT_TRIGGER_TYPE_MANUAL: 'MANUAL',
