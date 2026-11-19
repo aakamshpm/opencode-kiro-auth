@@ -186,6 +186,14 @@ const MODEL_SPECS: Record<string, ModelSpec> = {
     // 1M context per kiro.dev/blog/kimi-k3; the output limit is not published.
     limit: CONTEXT_1M,
     modalities: TEXT_ONLY
+  },
+  'grok-4.7': {
+    name: 'Grok 4.7',
+    rate: '2.7x',
+    // 500K context per kiro.dev; requests over 200K tokens bill at 5.4x. Modalities and
+    // output limit are not published, so these are conservative.
+    limit: { context: 500000, output: 64000 },
+    modalities: TEXT_ONLY
   }
 }
 

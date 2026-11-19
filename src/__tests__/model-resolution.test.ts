@@ -10,6 +10,7 @@ describe('resolveKiroModel', () => {
     expect(resolveKiroModel('minimax-m2.1')).toBe('minimax-m2.1')
     expect(resolveKiroModel('qwen3-coder-next')).toBe('qwen3-coder-next')
     expect(resolveKiroModel('kimi-k3')).toBe('kimi-k3')
+    expect(resolveKiroModel('grok-4.7')).toBe('grok-4.7')
   })
 
   test('keeps existing supported Claude slugs intact', () => {
