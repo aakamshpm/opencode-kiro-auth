@@ -98,15 +98,18 @@ fi
 
 mkdir -p "$STATE_DIR"
 chmod 700 "$STATE_DIR"
-printf '%s\n' "$fp" > "$STATE"
-chmod 600 "$STATE"
 
 if [ "${KIRO_WATCH_DRY_RUN:-0}" = "1" ]; then
+  printf '%s\n' "$fp" > "$STATE"
+  chmod 600 "$STATE"
   echo "kiro-cli account changed (dry run)"
   exit 0
 fi
 
-# restart blocks until the job finishes, so state is only recorded once the
-# server actually restarted; a failed restart is retried on the next change.
+# restart blocks until systemd has started the new unit, so state is only
+# recorded once the restart succeeded; a failed restart is retried on the
+# next database change.
 systemctl --user restart kiro-auth-server
+printf '%s\n' "$fp" > "$STATE"
+chmod 600 "$STATE"
 echo "kiro-cli account changed; restarted kiro-auth-server"
