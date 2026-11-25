@@ -124,6 +124,30 @@ systemctl --user enable --now kiro-auth-server
 The service starts at login. To keep it running when you are logged out, also run
 `loginctl enable-linger "$USER"`.
 
+### Restart automatically after switching kiro-cli accounts
+
+The server imports kiro-cli accounts at startup. After `kiro-cli logout` and
+`kiro-cli login` (or `kiro-cli profile`), restart it:
+
+```bash
+systemctl --user restart kiro-auth-server
+```
+
+To do that automatically, install the watcher:
+
+```bash
+install -m 755 scripts/kiro-cli-account-watch.sh ~/.local/bin/kiro-auth-cli-watch
+install -m 644 scripts/kiro-auth-server-watch.path ~/.config/systemd/user/
+install -m 644 scripts/kiro-auth-server-watch.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now kiro-auth-server-watch.path
+```
+
+The path unit watches kiro-cli's auth database. It restarts the server only when
+the account identity changes (SSO client id, profile ARN, or start URL), so token
+refreshes and normal CLI use do not interrupt requests. If you set
+`KIROCLI_DB_PATH` for the server, also point `PathChanged=` at the same file.
+
 ### Endpoints
 
 | Endpoint                       | Auth | Notes                                                  |

@@ -1,0 +1,7 @@
+[Unit]
+Description=Restart kiro-auth-server when the kiro-cli account changes
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/kiro-auth-cli-watch
+TimeoutStartSec=60

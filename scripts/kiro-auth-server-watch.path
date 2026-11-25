@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch the kiro-cli auth database for account switches
+
+[Path]
+PathChanged=%h/.local/share/kiro-cli/data.sqlite3
+Unit=kiro-auth-server-watch.service
+
+[Install]
+WantedBy=default.target
