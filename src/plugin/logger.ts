@@ -1,5 +1,13 @@
 import { Buffer } from 'node:buffer'
-import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import {
+  appendFileSync,
+  chmodSync,
+  mkdirSync,
+  readdirSync,
+  statSync,
+  unlinkSync,
+  writeFileSync
+} from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -17,6 +25,49 @@ const getLogDir = () => {
   return join(base, 'kiro-logs')
 }
 
+// Request/response logs hold full prompts and code, so keep them private and
+// bounded. KIRO_LOG_RETENTION_DAYS=0 disables pruning.
+const API_LOG_NAME = /^(error_)?\d{4}-\d{2}-\d{2}T[\w-]+Z_(request|response)\.json$/
+const PRUNE_INTERVAL_MS = 6 * 60 * 60 * 1000
+let lastPruneAt = 0
+
+const retentionMs = (): number => {
+  const raw = process.env.KIRO_LOG_RETENTION_DAYS
+  const days = raw === undefined || raw === '' ? 7 : Number(raw)
+  return Number.isFinite(days) && days > 0 ? days * 24 * 60 * 60 * 1000 : 0
+}
+
+/** Delete API log files older than maxAgeMs. Returns the number removed. */
+export function pruneApiLogs(dir: string, maxAgeMs: number, now = Date.now()): number {
+  if (maxAgeMs <= 0) return 0
+  let removed = 0
+  try {
+    for (const name of readdirSync(dir)) {
+      if (!API_LOG_NAME.test(name)) continue
+      const path = join(dir, name)
+      try {
+        if (now - statSync(path).mtimeMs > maxAgeMs) {
+          unlinkSync(path)
+          removed++
+        }
+      } catch {}
+    }
+  } catch {}
+  return removed
+}
+
+const ensureLogDir = (dir: string) => {
+  mkdirSync(dir, { recursive: true, mode: 0o700 })
+  if (process.platform === 'win32') return
+  if (Date.now() - lastPruneAt < PRUNE_INTERVAL_MS) return
+  lastPruneAt = Date.now()
+  // mkdir's mode does not change a directory that already exists.
+  try {
+    chmodSync(dir, 0o700)
+  } catch {}
+  setImmediate(() => pruneApiLogs(dir, retentionMs()))
+}
+
 let mirrorToStderr = false
 
 /** Echo log lines to stderr as well (server mode, so journald captures them). */
@@ -27,7 +78,7 @@ export function enableStderrMirror(): void {
 const writeToFile = (level: string, message: string, ...args: unknown[]) => {
   try {
     const dir = getLogDir()
-    mkdirSync(dir, { recursive: true })
+    ensureLogDir(dir)
     const path = join(dir, 'plugin.log')
     const timestamp = new Date().toISOString()
     const content = `[${timestamp}] ${level}: ${message} ${args
@@ -45,7 +96,7 @@ const writeToFile = (level: string, message: string, ...args: unknown[]) => {
         return String(a)
       })
       .join(' ')}\n`
-    appendFileSync(path, content)
+    appendFileSync(path, content, { mode: 0o600 })
     if (mirrorToStderr) process.stderr.write(content)
   } catch (e) {}
 }
@@ -58,12 +109,12 @@ const writeApiLog = (
 ) => {
   try {
     const dir = getLogDir()
-    mkdirSync(dir, { recursive: true })
+    ensureLogDir(dir)
     const prefix = isError ? 'error_' : ''
     const filename = `${prefix}${timestamp}_${type}.json`
     const path = join(dir, filename)
     const content = JSON.stringify(data, binaryToBase64Replacer, 2)
-    writeFileSync(path, content)
+    writeFileSync(path, content, { mode: 0o600 })
   } catch (e) {}
 }
 
